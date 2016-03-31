@@ -42,7 +42,7 @@ namespace Digi.Utils
             return combinationString;
         }
         
-        public string GetFriendlyString()
+        public string GetFriendlyString(bool xboxChars = true)
         {
             List<string> combined = new List<string>();
             
@@ -69,7 +69,7 @@ namespace Digi.Utils
                         combined.Add(InputHandler.inputNames.GetValueOrDefault(control, InputHandler.NOT_FOUND));
                     }
                 }
-                else if(o is MyJoystickAxesEnum || o is MyJoystickButtonsEnum)
+                else if(xboxChars && (o is MyJoystickAxesEnum || o is MyJoystickButtonsEnum))
                 {
                     char c = InputHandler.xboxCodes.GetValueOrDefault(o, ' ');
                     combined.Add(c == ' ' ? InputHandler.inputNames.GetValueOrDefault(o, InputHandler.NOT_FOUND) : c.ToString());
@@ -81,6 +81,11 @@ namespace Digi.Utils
             }
             
             return String.Join(" ", combined);
+        }
+        
+        public bool AnyPressed()
+        {
+            return InputHandler.GetAnyPressed(combination);
         }
         
         public bool AllPressed()
@@ -226,151 +231,6 @@ namespace Digi.Utils
             }
             
             return true;
-        }
-        
-        public bool AnyPressed()
-        {
-            if(combination.Count == 0)
-                return false;
-            
-            foreach(var o in combination)
-            {
-                if(o is MyKeys)
-                {
-                    if(MyAPIGateway.Input.IsKeyPress((MyKeys)o))
-                        return true;
-                }
-                else if(o is MyStringId)
-                {
-                    if(MyAPIGateway.Input.IsGameControlPressed((MyStringId)o))
-                        return true;
-                }
-                else if(o is MyMouseButtonsEnum)
-                {
-                    if(MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o))
-                        return true;
-                }
-                else if(o is MyJoystickAxesEnum)
-                {
-                    if(MyAPIGateway.Input.IsJoystickAxisPressed((MyJoystickAxesEnum)o))
-                        return true;
-                }
-                else if(o is MyJoystickButtonsEnum)
-                {
-                    if(MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)o))
-                        return true;
-                }
-                else if(o is string)
-                {
-                    var text = (string)o;
-                    
-                    switch(text)
-                    {
-                        case InputHandler.MOUSE_PREFIX+"scrollup":
-                            if(MyAPIGateway.Input.DeltaMouseScrollWheelValue() > 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"scrolldown":
-                            if(MyAPIGateway.Input.DeltaMouseScrollWheelValue() < 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"x+":
-                            if(MyAPIGateway.Input.GetMouseXForGamePlay() > 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"x-":
-                            if(MyAPIGateway.Input.GetMouseXForGamePlay() < 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"y+":
-                            if(MyAPIGateway.Input.GetMouseYForGamePlay() > 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"y-":
-                            if(MyAPIGateway.Input.GetMouseYForGamePlay() < 0)
-                                return true;
-                            break;
-                        case InputHandler.MOUSE_PREFIX+"analog":
-                            {
-                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
-                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
-                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
-                                
-                                if(x != 0 || y != 0 || z != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.MOUSE_PREFIX+"x":
-                            {
-                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
-                                
-                                if(x != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.MOUSE_PREFIX+"y":
-                            {
-                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
-                                
-                                if(y != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.MOUSE_PREFIX+"scroll":
-                            {
-                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
-                                
-                                if(z != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.GAMEPAD_PREFIX+"lsanalog":
-                            {
-                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
-                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
-                                
-                                if(x != 0 || y != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.GAMEPAD_PREFIX+"rsanalog":
-                            {
-                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
-                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
-                                
-                                if(x != 0 || y != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.GAMEPAD_PREFIX+"ltanalog":
-                            {
-                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
-                                
-                                if(z != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                        case InputHandler.GAMEPAD_PREFIX+"rtanalog":
-                            {
-                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
-                                
-                                if(z != 0)
-                                    return true;
-                                
-                                break;
-                            }
-                    }
-                }
-            }
-            
-            return false;
         }
         
         public static ControlCombination CreateFrom(string combinationString, bool logErrors = false)
@@ -669,11 +529,11 @@ namespace Digi.Utils
                 {CONTROL_PREFIX+"specfree", MyControlsSpace.SPECTATOR_FREE},
                 {CONTROL_PREFIX+"specstatic", MyControlsSpace.SPECTATOR_STATIC},
                 {CONTROL_PREFIX+"stationrotation", MyControlsSpace.STATION_ROTATION},
+                {CONTROL_PREFIX+"switchleft", MyControlsSpace.SWITCH_LEFT}, // previous color or cam
+                {CONTROL_PREFIX+"switchright", MyControlsSpace.SWITCH_RIGHT}, // next color or cam
                 {CONTROL_PREFIX+"voicechat", MyControlsSpace.VOICE_CHAT}, // TODO does this work ?
                 {CONTROL_PREFIX+"voxelpaint", MyControlsSpace.VOXEL_PAINT}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"compoundmode", MyControlsSpace.SWITCH_COMPOUND}, // TODO does this work ?
-                {CONTROL_PREFIX+"switchleft", MyControlsSpace.SWITCH_LEFT}, // TODO dafuq is this ?
-                {CONTROL_PREFIX+"switchright", MyControlsSpace.SWITCH_RIGHT}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"voxelhandsettings", MyControlsSpace.VOXEL_HAND_SETTINGS}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"buildmode", MyControlsSpace.BUILD_MODE}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"buildingmode", MyControlsSpace.SWITCH_BUILDING_MODE}, // TODO dafuq is this ?
@@ -681,8 +541,8 @@ namespace Digi.Utils
                 {CONTROL_PREFIX+"prevblockstage", MyControlsSpace.PREV_BLOCK_STAGE}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"movecloser", MyControlsSpace.MOVE_CLOSER}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"movefurther", MyControlsSpace.MOVE_FURTHER}, // TODO dafuq is this ?
-                {CONTROL_PREFIX+"primarybuildaction", MyControlsSpace.SLOT1}, // TODO dafuq is this ?
-                {CONTROL_PREFIX+"secondarybuildaction", MyControlsSpace.SLOT1}, // TODO dafuq is this ?
+                {CONTROL_PREFIX+"primarybuildaction", MyControlsSpace.PRIMARY_BUILD_ACTION}, // TODO dafuq is this ?
+                {CONTROL_PREFIX+"secondarybuildaction", MyControlsSpace.SECONDARY_BUILD_ACTION}, // TODO dafuq is this ?
                 {CONTROL_PREFIX+"copypaste", MyControlsSpace.COPY_PASTE_ACTION}, // TODO does this work ?
             };
             
@@ -738,6 +598,303 @@ namespace Digi.Utils
             // TODO detect mission screens
             // TODO detect yes/no notifications
             return MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None;
+        }
+        
+        // TODO >> test and replace the Any/AllPressed()
+        public static bool GetPressed(List<object> objects, bool any, bool ignoreGameControls = false)
+        {
+            if(objects.Count == 0)
+                return false;
+            
+            foreach(var o in objects)
+            {
+                if(o is MyKeys)
+                {
+                    if(any == MyAPIGateway.Input.IsKeyPress((MyKeys)o))
+                        return any;
+                }
+                else if(o is MyStringId)
+                {
+                    if(ignoreGameControls)
+                        continue;
+                    
+                    if(any == MyAPIGateway.Input.IsGameControlPressed((MyStringId)o))
+                        return any;
+                }
+                else if(o is MyMouseButtonsEnum)
+                {
+                    if(any == MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o))
+                        return any;
+                }
+                else if(o is MyJoystickAxesEnum)
+                {
+                    if(any == MyAPIGateway.Input.IsJoystickAxisPressed((MyJoystickAxesEnum)o))
+                        return any;
+                }
+                else if(o is MyJoystickButtonsEnum)
+                {
+                    if(any == MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)o))
+                        return any;
+                }
+                else if(o is string)
+                {
+                    var text = (string)o;
+                    
+                    switch(text)
+                    {
+                        case InputHandler.MOUSE_PREFIX+"scrollup":
+                            if(any == MyAPIGateway.Input.DeltaMouseScrollWheelValue() > 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"scrolldown":
+                            if(any == MyAPIGateway.Input.DeltaMouseScrollWheelValue() < 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"x+":
+                            if(any == MyAPIGateway.Input.GetMouseXForGamePlay() > 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"x-":
+                            if(any == MyAPIGateway.Input.GetMouseXForGamePlay() < 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"y+":
+                            if(any == MyAPIGateway.Input.GetMouseYForGamePlay() > 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"y-":
+                            if(any == MyAPIGateway.Input.GetMouseYForGamePlay() < 0)
+                                return any;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"analog":
+                            {
+                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
+                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
+                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                                
+                                if(any == (x != 0 || y != 0 || z != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"x":
+                            {
+                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
+                                
+                                if(any == (x != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"y":
+                            {
+                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
+                                
+                                if(any == (y != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"scroll":
+                            {
+                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                                
+                                if(any == (z != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"lsanalog":
+                            {
+                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
+                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
+                                
+                                if(any == (x != 0 || y != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"rsanalog":
+                            {
+                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
+                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
+                                
+                                if(any == (x != 0 || y != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"ltanalog":
+                            {
+                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
+                                
+                                if(any == (z != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"rtanalog":
+                            {
+                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
+                                
+                                if(any == (z != 0))
+                                    return any;
+                                
+                                break;
+                            }
+                    }
+                }
+            }
+            
+            return !any;
+        }
+        
+        public static bool GetAnyPressed(List<object> objects, bool ignoreGameControls = false)
+        {
+            if(objects.Count == 0)
+                return false;
+            
+            foreach(var o in objects)
+            {
+                if(o is MyKeys)
+                {
+                    if(MyAPIGateway.Input.IsKeyPress((MyKeys)o))
+                        return true;
+                }
+                else if(o is MyStringId)
+                {
+                    if(ignoreGameControls)
+                        continue;
+                    
+                    if(MyAPIGateway.Input.IsGameControlPressed((MyStringId)o))
+                        return true;
+                }
+                else if(o is MyMouseButtonsEnum)
+                {
+                    if(MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o))
+                        return true;
+                }
+                else if(o is MyJoystickAxesEnum)
+                {
+                    if(MyAPIGateway.Input.IsJoystickAxisPressed((MyJoystickAxesEnum)o))
+                        return true;
+                }
+                else if(o is MyJoystickButtonsEnum)
+                {
+                    if(MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)o))
+                        return true;
+                }
+                else if(o is string)
+                {
+                    var text = (string)o;
+                    
+                    switch(text)
+                    {
+                        case InputHandler.MOUSE_PREFIX+"scrollup":
+                            if(MyAPIGateway.Input.DeltaMouseScrollWheelValue() > 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"scrolldown":
+                            if(MyAPIGateway.Input.DeltaMouseScrollWheelValue() < 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"x+":
+                            if(MyAPIGateway.Input.GetMouseXForGamePlay() > 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"x-":
+                            if(MyAPIGateway.Input.GetMouseXForGamePlay() < 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"y+":
+                            if(MyAPIGateway.Input.GetMouseYForGamePlay() > 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"y-":
+                            if(MyAPIGateway.Input.GetMouseYForGamePlay() < 0)
+                                return true;
+                            break;
+                        case InputHandler.MOUSE_PREFIX+"analog":
+                            {
+                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
+                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
+                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                                
+                                if(x != 0 || y != 0 || z != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"x":
+                            {
+                                var x = MyAPIGateway.Input.GetMouseXForGamePlay();
+                                
+                                if(x != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"y":
+                            {
+                                var y = MyAPIGateway.Input.GetMouseYForGamePlay();
+                                
+                                if(y != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.MOUSE_PREFIX+"scroll":
+                            {
+                                var z = MyAPIGateway.Input.DeltaMouseScrollWheelValue();
+                                
+                                if(z != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"lsanalog":
+                            {
+                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
+                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
+                                
+                                if(x != 0 || y != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"rsanalog":
+                            {
+                                var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
+                                var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
+                                
+                                if(x != 0 || y != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"ltanalog":
+                            {
+                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
+                                
+                                if(z != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX+"rtanalog":
+                            {
+                                var z = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
+                                
+                                if(z != 0)
+                                    return true;
+                                
+                                break;
+                            }
+                    }
+                }
+            }
+            
+            return false;
         }
         
         public static string GetInputsForPB(ControlCombination input, bool released = false)

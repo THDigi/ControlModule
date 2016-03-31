@@ -173,7 +173,6 @@ namespace Digi.ControlModule
                                     }
                                     break;
                                 }
-                                
                             case InputHandler.GAMEPAD_PREFIX+"rsanalog":
                                 {
                                     var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
@@ -205,7 +204,7 @@ namespace Digi.ControlModule
                 if(gamepad != null)
                     MyAPIGateway.Utilities.ShowNotification(gamepad.ToString(), 16, MyFontEnum.White);
                 else
-                    MyAPIGateway.Utilities.ShowNotification("Gamepad: (not connected or enabled)", 16, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification("Gamepad: (not connected and enabled)", 16, MyFontEnum.White);
                 MyAPIGateway.Utilities.ShowNotification(controls.ToString(), 16, MyFontEnum.White);
             }
         }
@@ -312,13 +311,13 @@ namespace Digi.ControlModule
     {
         private ControlCombination input = null;
         private bool readAllInputs = false;
+        private bool badInput = false;
         private string filter = null;
         private double repeat = 0;
         private bool release = false;
         private bool releaseOnly = false;
         private double releaseDelayTrigger = 0;
         private bool anyInput = false;
-        private bool seats = false;
         private bool noInfo = false;
         private bool debug = false;
         private string debugName = null;
@@ -327,7 +326,12 @@ namespace Digi.ControlModule
         private long lastTrigger = 0;
         private bool lastPressed = false;
         private long lastReleased = 0;
+        private bool lastGridCheck = false;
+        private byte skipGridCheck = byte.MaxValue - 5;
+        private byte skipSpeed = 30;
         
+        private static byte skipSpeedCounter = 30;
+        private static readonly List<Ingame.IMyTerminalBlock> blocks = new List<Ingame.IMyTerminalBlock>();
         private static readonly List<Ingame.TerminalActionParameter> run = new List<Ingame.TerminalActionParameter>();
         
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -347,6 +351,11 @@ namespace Digi.ControlModule
             block.AppendingCustomInfo += CustomInfo;
             block.CustomNameChanged += NameChanged;
             NameChanged(block);
+            
+            if(++skipSpeedCounter > 60)
+                skipSpeedCounter = 30;
+            
+            skipSpeed = skipSpeedCounter;
         }
         
         public override void Close()
@@ -364,31 +373,30 @@ namespace Digi.ControlModule
                 var name = block.CustomName.Trim().ToLower();
                 
                 // first reset fields
+                input = null;
                 readAllInputs = false;
+                badInput = false;
                 filter = null;
                 repeat = 0;
                 release = false;
                 releaseOnly = false;
                 releaseDelayTrigger = 0;
                 anyInput = false;
-                seats = false;
                 noInfo = false;
                 debug = false;
                 debugName = null;
                 
                 anyInput = name.Contains("+any");
-                seats = name.Contains("+seats");
                 noInfo = name.Contains("+noinfo");
                 debug = name.Contains("+debug");
                 
                 // TODO maybe a tag to only allow one controller block to use inputs?
                 
-                // TODO test faction sharing, what if someone doesn't want to share ?
-                
                 int index = name.IndexOf("input:");
                 
                 if(index != -1)
                 {
+                    badInput = true; // assume it's going to be an invalid input until we actually confirm a valid input
                     var subName = name.Substring(index + "input:".Length).Trim();
                     
                     if(subName.Length > 0)
@@ -418,9 +426,18 @@ namespace Digi.ControlModule
                         if(inputStr != null)
                         {
                             if(inputStr == "all")
+                            {
                                 readAllInputs = true;
+                                anyInput = true; // enable +any for feedback because we're gonna use that behaviour anyway as it's impossible to press all inputs at once
+                                badInput = false;
+                            }
                             else
+                            {
                                 input = ControlCombination.CreateFrom(inputStr, false);
+                                
+                                if(input != null)
+                                    badInput = false;
+                            }
                         }
                     }
                 }
@@ -552,7 +569,6 @@ namespace Digi.ControlModule
             name = Regex.Replace(name, @"\+release(:([\d.]+))?", "", RegexOptions.IgnoreCase);
             name = Regex.Replace(name, @"\+releaseonly(:([\d.]+))?", "", RegexOptions.IgnoreCase);
             name = Regex.Replace(name, @"\+any", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+seats", "", RegexOptions.IgnoreCase);
             name = Regex.Replace(name, @"\+noinfo", "", RegexOptions.IgnoreCase);
             name = Regex.Replace(name, @"\+debug", "", RegexOptions.IgnoreCase);
             return name.Trim();
@@ -592,7 +608,16 @@ namespace Digi.ControlModule
                 FirstUpdate();
             }
             
-            if(input == null)
+            if(lastGridCheck && !(MyAPIGateway.Session.ControlledObject is MyShipController))
+            {
+                lastGridCheck = false;
+                skipGridCheck = byte.MaxValue - 5;
+            }
+            
+            if(badInput && debug && CheckBlocks())
+                MyAPIGateway.Utilities.ShowNotification(debugName+": incorrect input!", 17, MyFontEnum.Red);
+            
+            if(input == null && !readAllInputs)
                 return;
             
             bool pressed = CheckBlocks() && IsPressed();
@@ -605,6 +630,8 @@ namespace Digi.ControlModule
                 
                 if(debug)
                     MyAPIGateway.Utilities.ShowNotification(debugName+": delayed reset; triggerred", 500, MyFontEnum.Red);
+                
+                return;
             }
             
             if(repeat > 0)
@@ -688,17 +715,37 @@ namespace Digi.ControlModule
             if(block == null || !block.IsWorking)
                 return false;
             
-            if(!seats && !(controller as MyShipController).BlockDefinition.EnableShipControl) // check passenger seats
+            var relation = block.GetPlayerRelationToOwner();
+            
+            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies) // check ownership of timer/PB
                 return false;
             
-            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId) // must be the same grid
-                return false; // TODO allow on other connected grids too? if so, move bottom-most
-            
-            if(controller.GetUserRelationToOwner(block.OwnerId) == MyRelationsBetweenPlayerAndBlock.Enemies) // check ownership
-                return false;
+            // TODO is this check really required?
+            if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != MyAPIGateway.Session.Player.IdentityId)
+            {
+                var idModule = (block as MyCubeBlock).IDModule;
+                
+                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None) // check sharing
+                    return false;
+            }
             
             if(filter != null && !controller.CustomName.ToLower().Contains(filter)) // check name filter
                 return false;
+            
+            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId) // must be the same grid or connected grid
+            {
+                if(++skipGridCheck >= skipSpeed)
+                {
+                    skipGridCheck = 0;
+                    var gridSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(controller.CubeGrid as IMyCubeGrid);
+                    blocks.Clear();
+                    gridSystem.GetBlocksOfType<IMyTerminalBlock>(blocks, b => b.EntityId == block.EntityId);
+                    lastGridCheck = (blocks.Count == 1);
+                    blocks.Clear();
+                }
+                
+                return lastGridCheck;
+            }
             
             return true;
         }
@@ -709,7 +756,7 @@ namespace Digi.ControlModule
                 return false;
             
             if(readAllInputs)
-                return MyAPIGateway.Input.IsAnyKeyPress() || MyAPIGateway.Input.IsAnyMouseOrJoystickPressed();
+                return InputHandler.GetAnyPressed(InputHandler.inputValueList, true);
             else
                 return (anyInput ? input.AnyPressed() : input.AllPressed());
         }
@@ -735,7 +782,7 @@ namespace Digi.ControlModule
             if(noInfo)
                 return;
             
-            if(input != null)
+            if(input != null || readAllInputs || badInput)
             {
                 const string ON = "[x] ";
                 const string OFF = "[_] ";
@@ -743,19 +790,21 @@ namespace Digi.ControlModule
                 info.Append(debug ? ON : OFF).Append("+debug").AppendLine();
                 info.Append(anyInput ? ON : OFF).Append("+any").AppendLine();
                 
-                info.Append(ON);
+                info.Append(input != null || readAllInputs ? ON : OFF);
                 if(readAllInputs)
                     info.Append("+input:\"all\"");
+                else if(input != null)
+                    info.Append("+input:\"").Append(input.GetFriendlyString(false)).Append('"');
+                else if(badInput)
+                    info.Append("+input:\"INCORRECT INPUT!\"");
                 else
-                    info.Append("+input:\"").Append(input.GetFriendlyString()).Append('"');
+                    info.Append("+input:\"error unknown state O.o\"");
                 info.AppendLine();
                 
                 info.Append(releaseOnly ? ON : OFF).Append("+releaseonly").Append(':').Append(releaseDelayTrigger.ToString("0.000")).AppendLine();
                 info.Append(release ? ON : OFF).Append("+release").Append(':').Append(releaseDelayTrigger.ToString("0.000")).AppendLine();
                 info.Append(repeat > 0 ? ON : OFF).Append("+repeat").Append(':').Append(repeat.ToString("0.000")).AppendLine();
                 info.Append(filter != null ? ON : OFF).Append("+filter:\"").Append(filter).Append('"').AppendLine();
-                info.Append(seats ? ON : OFF).Append("+seats").AppendLine();
-                
                 info.Append(OFF).Append("+noinfo");
             }
         }
