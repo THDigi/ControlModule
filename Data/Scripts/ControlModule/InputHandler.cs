@@ -592,11 +592,7 @@ namespace Digi.Utils
         
         public static bool IsInputReadable()
         {
-            // TODO detect chat
-            // TODO detect escape menu
-            // TODO detect F10 and F11 menus
-            // TODO detect mission screens
-            // TODO detect yes/no notifications
+            // TODO detect: chat, escape menu, F10 and F11 menus, mission screens, yes/no notifications
             return MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None;
         }
         
