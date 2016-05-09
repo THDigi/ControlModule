@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Sandbox.ModAPI;
@@ -9,17 +10,55 @@ using VRage.Utils;
 
 namespace Digi.Utils
 {
-    class Log
+    public static class Log
     {
-        public const string MOD_NAME = "ControlModule";
+        public const string MOD_NAME = "Control Module";
+        public const string MOD_FOLDER = "ControlModule";
         public const int WORKSHOP_ID = 655948251;
         public const string LOG_FILE = "info.log";
         
-        private static System.IO.TextWriter writer = null;
+        private static TextWriter writer = null;
         private static IMyHudNotification notify = null;
+        private static readonly StringBuilder cache = new StringBuilder(64);
+        private static readonly List<string> preInitMessages = new List<string>(0);
         private static int indent = 0;
-        private static StringBuilder cache = new StringBuilder();
-        private static List<string> preInitMessages = new List<string>();
+        
+        public static void Init()
+        {
+            if(MyAPIGateway.Utilities == null)
+            {
+                MyLog.Default.WriteLineAndConsole(MOD_NAME + " Log.Init() called before API was ready!");
+                return;
+            }
+            
+            if(writer != null)
+                Close();
+            
+            writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(LOG_FILE, typeof(Log));
+            
+            if(preInitMessages.Count > 0)
+            {
+                foreach(var msg in preInitMessages)
+                {
+                    Log.Error(msg);
+                }
+                
+                preInitMessages.Clear();
+            }
+        }
+        
+        public static void Close()
+        {
+            if(writer != null)
+            {
+                writer.Flush();
+                writer.Close();
+                writer = null;
+            }
+            
+            indent = 0;
+            cache.Clear();
+        }
         
         public static void IncreaseIndent()
         {
@@ -50,19 +89,22 @@ namespace Digi.Utils
             {
                 MyLog.Default.WriteLineAndConsole(MOD_NAME + " error: " + msg);
                 
-                string text = MOD_NAME + " error - open %AppData%/SpaceEngineers/Storage/" + WORKSHOP_ID + "_" + MOD_NAME + "/" + LOG_FILE + " for details";
-                
-                if(notify == null)
+                if(MyAPIGateway.Session != null)
                 {
-                    notify = MyAPIGateway.Utilities.CreateNotification(text, 10000, MyFontEnum.Red);
+                    string text = MOD_NAME + " error - open %AppData%/SpaceEngineers/Storage/" + WORKSHOP_ID + "_" + MOD_FOLDER + "/" + LOG_FILE + " for details";
+                    
+                    if(notify == null)
+                    {
+                        notify = MyAPIGateway.Utilities.CreateNotification(text, 10000, MyFontEnum.Red);
+                    }
+                    else
+                    {
+                        notify.Text = text;
+                        notify.ResetAliveTime();
+                    }
+                    
+                    notify.Show();
                 }
-                else
-                {
-                    notify.Text = text;
-                    notify.ResetAliveTime();
-                }
-                
-                notify.Show();
             }
             catch(Exception e)
             {
@@ -83,7 +125,7 @@ namespace Digi.Utils
                 cache.Append(DateTime.Now.ToString("[HH:mm:ss] "));
                 
                 if(writer == null)
-                    cache.Append("(PRE-INIT MESSAGE)");
+                    cache.Append("(PRE-INIT) ");
                 
                 for(int i = 0; i < indent; i++)
                 {
@@ -108,45 +150,6 @@ namespace Digi.Utils
             {
                 MyLog.Default.WriteLineAndConsole(MOD_NAME + " had an error while logging message='"+msg+"'\nLogger error: " + e.Message + "\n" + e.StackTrace);
             }
-        }
-        
-        public static void Init()
-        {
-            if(MyAPIGateway.Utilities == null)
-            {
-                MyLog.Default.WriteLineAndConsole(MOD_NAME + " Log.Init() called before API was ready!");
-                return;
-            }
-            
-            if(writer != null)
-            {
-                Close();
-            }
-            
-            writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(LOG_FILE, typeof(Log));
-            
-            if(preInitMessages.Count > 0)
-            {
-                foreach(var msg in preInitMessages)
-                {
-                    Log.Error(msg);
-                }
-                
-                preInitMessages.Clear();
-            }
-        }
-        
-        public static void Close()
-        {
-            if(writer != null)
-            {
-                writer.Flush();
-                writer.Close();
-                writer = null;
-            }
-            
-            indent = 0;
-            cache.Clear();
         }
     }
 }
