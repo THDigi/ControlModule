@@ -27,6 +27,7 @@ using Ingame = Sandbox.ModAPI.Ingame;
 
 // TODO - maybe an option to only allow one controller block to use inputs at a time?
 // TODO - 'pressed' state to test for NewPressed to avoid stuff like F being called when you just get in the cockpit?
+// TODO - fix for 'one input being held and another pressed not re-triggering' situation
 
 namespace Digi.ControlModule
 {
@@ -153,7 +154,10 @@ namespace Digi.ControlModule
                     }
                 }
                 
-                pb.ApplyAction("Run");
+                if(logic.runOnInput)
+                {
+                    pb.ApplyAction("Run");
+                }
             }
             catch(Exception e)
             {
@@ -188,7 +192,7 @@ namespace Digi.ControlModule
             }
             
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(ID_PREFIX + "AddInput");
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
                 //c.Title = MyStringId.GetOrCompute("Add input");
                 c.Tooltip = MyStringId.GetOrCompute("Click on an input from the list to add it to the inputs list below.");
                 c.SupportsMultipleBlocks = true;
@@ -197,6 +201,12 @@ namespace Digi.ControlModule
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput((int)v - 2);
                 tc.AddControl<TBlock>(c);
                 //redrawControls.Add(c);
+                
+                {
+                    var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "AddInput");
+                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput(v);
+                    tc.AddControl<TBlock>(p);
+                }
             }
             
             {
@@ -227,10 +237,16 @@ namespace Digi.ControlModule
                 c.Action = (b) => b.GameLogic.GetAs<ControlModule>().RemoveSelected();
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
+                
+                {
+                    var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "RemoveInput");
+                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RemoveInput(v);
+                    tc.AddControl<TBlock>(p);
+                }
             }
             
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(ID_PREFIX + "InputCheck");
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
                 c.Title = MyStringId.GetOrCompute("Multiple inputs check");
                 c.Tooltip = MyStringId.GetOrCompute("How to check the inputs before triggering.\n" +
                                                     "\n" +
@@ -246,10 +262,16 @@ namespace Digi.ControlModule
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputCheck = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
+                
+                
+                var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputCheck");
+                p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputCheck;
+                p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputCheck = v;
+                tc.AddControl<TBlock>(p);
             }
             
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(ID_PREFIX + "InputState");
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
                 c.Title = MyStringId.GetOrCompute("Trigger on state");
                 c.Tooltip = MyStringId.GetOrCompute("The input states that will trigger this block.\n" +
                                                     "\n" +
@@ -261,6 +283,12 @@ namespace Digi.ControlModule
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputState = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
+                
+                
+                var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputState");
+                p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputState;
+                p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputState = v;
+                tc.AddControl<TBlock>(p);
             }
             
             {
@@ -329,7 +357,7 @@ namespace Digi.ControlModule
             }
             
             {
-                var c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(ID_PREFIX + "ShipControllerFilter");
+                var c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(string.Empty);
                 c.Title = MyStringId.GetOrCompute("Partial cockpit name filter");
                 c.Tooltip = MyStringId.GetOrCompute("Only allow cockpits, seats or RC blocks that have this text in the name will be allowed to control this block.\n" +
                                                     "Leave blank to allow any cockpit, seat or RC block to control this block. (within ownership limits).\n" +
@@ -338,6 +366,25 @@ namespace Digi.ControlModule
                 c.SupportsMultipleBlocks = true;
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().Filter;
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = v;
+                tc.AddControl<TBlock>(c);
+                redrawControls.Add(c);
+                
+                var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
+                p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().filter;
+                p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = str.Clear().Append(v);
+                tc.AddControl<TBlock>(p);
+            }
+            
+            if(typeof(TBlock) == typeof(Ingame.IMyProgrammableBlock))
+            {
+                var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
+                c.Title = MyStringId.GetOrCompute("Run on input");
+                c.Tooltip = MyStringId.GetOrCompute("Toggle if the PB is executed when inputs are registered.\n" +
+                                                    "This will allow you to update the internal Inputs dictionary without executing the PB.");
+                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.SupportsMultipleBlocks = true;
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RunOnInput = v;
+                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().RunOnInput;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -356,7 +403,7 @@ namespace Digi.ControlModule
             }
             
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(ID_PREFIX + "Introduction");
+                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(string.Empty);
                 c.Title = MyStringId.GetOrCompute("Quick Introduction");
                 c.Tooltip = MyStringId.GetOrCompute(ControlModuleMod.QUICK_INTRODUCTION_TEXT);
                 c.SupportsMultipleBlocks = true;
@@ -408,19 +455,19 @@ namespace Digi.ControlModule
         {
             list.Add(new MyTerminalControlComboBoxItem()
                      {
-                         Key = 0L,
+                         Key = 0,
                          Value = MyStringId.GetOrCompute("Pressed"),
                      });
             
             list.Add(new MyTerminalControlComboBoxItem()
                      {
-                         Key = 1L,
+                         Key = 1,
                          Value = MyStringId.GetOrCompute("Pressed and Released"),
                      });
             
             list.Add(new MyTerminalControlComboBoxItem()
                      {
-                         Key = 2L,
+                         Key = 2,
                          Value = MyStringId.GetOrCompute("Released"),
                      });
         }
@@ -770,13 +817,13 @@ namespace Digi.ControlModule
             }
         }
     }
-    
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_MyProgrammableBlock))]
     public class ProgrammableBlock : ControlModule { }
-    
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TimerBlock))]
     public class TimerBlock : ControlModule { }
-    
+
     public class ControlModule : MyGameLogicComponent
     {
         public ControlCombination input = null;
@@ -788,7 +835,7 @@ namespace Digi.ControlModule
         public double releaseDelayTrigger = 0;
         public double holdDelayTrigger = 0;
         public bool debug = false;
-        public string debugName = null;
+        public bool runOnInput = true;
         
         private bool first = true;
         private long lastTrigger = 0;
@@ -801,6 +848,9 @@ namespace Digi.ControlModule
         private byte skipNameCheck = byte.MaxValue - 5;
         private byte skipSpeed = 30;
         private byte propertiesChanged = 0;
+        private string debugName = null;
+        
+        public bool lastInputAddedValid = true;
         
         public const byte PROPERTIES_CHANGED_TICKS = 15;
         
@@ -881,18 +931,6 @@ namespace Digi.ControlModule
             get { return input != null || readAllInputs; }
         }
         
-        public bool ShowDebug
-        {
-            get { return debug; }
-            set
-            {
-                debug = value;
-                
-                if(propertiesChanged == 0)
-                    propertiesChanged = PROPERTIES_CHANGED_TICKS;
-            }
-        }
-        
         public long InputState
         {
             get { return inputState; }
@@ -969,12 +1007,95 @@ namespace Digi.ControlModule
             }
         }
         
+        public bool RunOnInput
+        {
+            get { return runOnInput; }
+            set
+            {
+                runOnInput = value;
+                
+                if(propertiesChanged == 0)
+                    propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            }
+        }
+        
+        public bool ShowDebug
+        {
+            get { return debug; }
+            set
+            {
+                debug = value;
+                
+                if(propertiesChanged == 0)
+                    propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            }
+        }
+        
         public void SetFilter(StringBuilder value)
         {
             // strip characters used in serialization and force lower letter case
             value.Replace(DATA_TAG_END.ToString(), "");
             value.Replace(DATA_SEPARATOR.ToString(), "");
-            filter = value.ToString().ToLower();
+            filter = value.ToString().ToLower().Trim();
+        }
+        
+        public void AddInput(string inputString)
+        {
+            if(string.IsNullOrEmpty(inputString))
+                throw new Exception("Input can't be null or empty!");
+            
+            if(inputString == "all")
+            {
+                input = null;
+                readAllInputs = true;
+            }
+            else
+            {
+                if(!InputHandler.inputs.ContainsKey(inputString))
+                    throw new Exception("Unknown input: '"+inputString+"'");
+                
+                readAllInputs = false;
+                
+                if(input == null)
+                    input = ControlCombination.CreateFrom(inputString, false);
+                else
+                    input = ControlCombination.CreateFrom(input.combinationString + " " + inputString, false);
+            }
+            
+            if(propertiesChanged == 0)
+                propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            
+            RefreshUI();
+        }
+        
+        public void RemoveInput(string inputString)
+        {
+            if(string.IsNullOrEmpty(inputString))
+                return;
+            
+            if(inputString == "all")
+            {
+                input = null;
+                readAllInputs = false;
+            }
+            else
+            {
+                if(readAllInputs || input == null)
+                    return;
+                
+                if(!InputHandler.inputs.ContainsKey(inputString))
+                    throw new Exception("Unknown input: '"+inputString+"'");
+                
+                if(!input.raw.Remove(inputString))
+                    return;
+                
+                input = ControlCombination.CreateFrom(String.Join(" ", input.raw), false);
+            }
+            
+            if(propertiesChanged == 0)
+                propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            
+            RefreshUI();
         }
         
         public void AddInput(int id)
@@ -1238,32 +1359,14 @@ namespace Digi.ControlModule
                         case "debug":
                             debug = (kv[1] == "1");
                             break;
+                        case "run":
+                            runOnInput = (kv[1] == "1");
+                            break;
                         default:
                             Log.Error("Unknown key in name: '"+kv[0]+"', data raw: '"+block.CustomName+"'");
                             break;
                     }
                 }
-                
-                /*
-                if(data[0] != "none")
-                {
-                    readAllInputs = (data[0] == "all");
-                    
-                    if(!readAllInputs)
-                        input = ControlCombination.CreateFrom(data[0]);
-                }
-                
-                inputState = (byte)MathHelper.Clamp(int.Parse(data[1]), 0, 2);
-                inputCheck = (byte)MathHelper.Clamp(int.Parse(data[2]), 0, 2);
-                releaseDelayTrigger = Math.Round(double.Parse(data[3]), 3);
-                repeatDelayTrigger = Math.Round(double.Parse(data[4]), 3);
-                holdDelayTrigger = Math.Round(double.Parse(data[5]), 3);
-                
-                if(!String.IsNullOrEmpty(data[6]))
-                    filter = data[6];
-                
-                debug = data[7] == "1";
-                 */
                 
                 if(debug)
                     debugName = GetNameNoData();
@@ -1284,7 +1387,8 @@ namespace Digi.ControlModule
                      || repeatDelayTrigger > 0.016
                      || releaseDelayTrigger > 0.016
                      || filter != null
-                     || debug);
+                     || debug
+                     || !runOnInput);
         }
         
         public void ResetSettings()
@@ -1297,6 +1401,7 @@ namespace Digi.ControlModule
             inputCheck = 0;
             releaseDelayTrigger = 0;
             holdDelayTrigger = 0;
+            runOnInput = true;
             debug = false;
             debugName = null;
         }
@@ -1362,7 +1467,7 @@ namespace Digi.ControlModule
                 str.Append(DATA_SEPARATOR);
             }
             
-            if(filter != null)
+            if(!string.IsNullOrEmpty(filter))
             {
                 str.Append("filter").Append(DATA_KEYVALUE_SEPARATOR).Append(filter);
                 str.Append(DATA_SEPARATOR);
@@ -1371,6 +1476,12 @@ namespace Digi.ControlModule
             if(debug)
             {
                 str.Append("debug").Append(DATA_KEYVALUE_SEPARATOR).Append("1");
+                str.Append(DATA_SEPARATOR);
+            }
+            
+            if(!runOnInput)
+            {
+                str.Append("run").Append(DATA_KEYVALUE_SEPARATOR).Append("0");
                 str.Append(DATA_SEPARATOR);
             }
             
@@ -1574,7 +1685,9 @@ namespace Digi.ControlModule
                 if(lastGridCheck)
                 {
                     lastGridCheck = false;
+                    lastNameCheck = false;
                     skipGridCheck = byte.MaxValue - 5;
+                    skipNameCheck = byte.MaxValue - 5;
                 }
                 
                 return false;
@@ -1598,9 +1711,9 @@ namespace Digi.ControlModule
                     return false;
             }
             
-            if(filter != null) // check name filtering
+            if(!string.IsNullOrEmpty(filter)) // check name filtering
             {
-                if(++skipNameCheck >= skipSpeed)
+                if(++skipNameCheck >= 15)
                 {
                     skipNameCheck = 0;
                     lastNameCheck = controller.CustomName.ToLower().Contains(filter);
@@ -1666,8 +1779,11 @@ namespace Digi.ControlModule
                 
                 if(MyAPIGateway.Multiplayer.IsServer) // server doesn't need to send the pressedList
                 {
-                    var pb = Entity as Ingame.IMyProgrammableBlock;
-                    pb.ApplyAction("Run");
+                    if(runOnInput)
+                    {
+                        var pb = Entity as Ingame.IMyProgrammableBlock;
+                        pb.ApplyAction("Run");
+                    }
                 }
                 else // but clients do need to since PBs run server-side only
                 {

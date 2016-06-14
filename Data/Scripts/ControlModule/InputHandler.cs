@@ -439,7 +439,7 @@ namespace Digi.Utils
             inputNiceNames["minus"] = "-";
             inputNiceNames["period"] = ".";
             inputNiceNames["pipe"] = "|";
-            inputNiceNames["plus"] = ",";
+            inputNiceNames["plus"] = "+";
             inputNiceNames["question"] = "?";
             inputNiceNames["quote"] = "\"";
             inputNiceNames["semicolon"] = ";";
