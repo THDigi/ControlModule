@@ -631,7 +631,7 @@ namespace Digi.Utils
                 }
                 else if(o is MyMouseButtonsEnum)
                 {
-                    bool pressed = MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o); // HACK workaround for any == pressed not working here for some reason
+                    bool pressed = false; // HACK workaround for any == pressed not working here for some reason
                     
                     if(justPressed ? MyAPIGateway.Input.IsNewMousePressed((MyMouseButtonsEnum)o) : MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o))
                         pressed = true;

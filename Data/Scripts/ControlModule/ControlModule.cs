@@ -800,7 +800,7 @@ namespace Digi.ControlModule
                     else if(cmd.StartsWith("updatetype", StringComparison.Ordinal)) // TODO remove?
                     {
                         testAfterSimulation = !testAfterSimulation;
-                        MyAPIGateway.Utilities.ShowMessage(Log.MOD_NAME, "[TEST OPTION] Update type set to: "+(testAfterSimulation ? "after simulation" : "before simulation (defualt)"));
+                        MyAPIGateway.Utilities.ShowMessage(Log.MOD_NAME, "[TEST OPTION] Update type set to: "+(testAfterSimulation ? "after simulation" : "before simulation (default)"));
                     }
                     else
                     {
@@ -1515,7 +1515,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(ControlModuleMod.testAfterSimulation)
+                if(!ControlModuleMod.testAfterSimulation)
                     Update();
             }
             catch(Exception e)
@@ -1528,7 +1528,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(!ControlModuleMod.testAfterSimulation)
+                if(ControlModuleMod.testAfterSimulation)
                     Update();
             }
             catch(Exception e)
@@ -1612,7 +1612,7 @@ namespace Digi.ControlModule
                     }
                     else if(debug)
                     {
-                        DebugPrint("Press and hold, waiting "+TimeSpan.FromTicks((lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 17 : 16), MyFontEnum.DarkBlue);
+                        DebugPrint("Press and hold, waiting "+TimeSpan.FromTicks((lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
                     }
                 }
                 
@@ -1629,7 +1629,7 @@ namespace Digi.ControlModule
                     }
                     else if(debug)
                     {
-                        DebugPrint("Repeat, waiting "+TimeSpan.FromTicks((lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 17 : 16), MyFontEnum.DarkBlue);
+                        DebugPrint("Repeat, waiting "+TimeSpan.FromTicks((lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
                     }
                 }
             }
@@ -1670,7 +1670,7 @@ namespace Digi.ControlModule
                     }
                     else if(debug)
                     {
-                        DebugPrint("Delayed release, waiting "+TimeSpan.FromTicks((lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 17 : 16), MyFontEnum.DarkBlue);
+                        DebugPrint("Delayed release, waiting "+TimeSpan.FromTicks((lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)) - time).ToString(TIMESPAN_FORMAT)+"...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
                     }
                 }
             }
