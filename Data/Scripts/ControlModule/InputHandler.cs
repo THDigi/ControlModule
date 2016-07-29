@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Sandbox.Game;
-using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using VRage.Input;
 using VRage.Utils;
@@ -117,6 +116,8 @@ namespace Digi.Utils
         public const string MOUSE_PREFIX = "m.";
         public const string GAMEPAD_PREFIX = "g.";
         public const string CONTROL_PREFIX = "c.";
+        
+        private static byte menuInChat = 0;
         
         private const float EPSILON = 0.000001f;
         
@@ -341,7 +342,8 @@ namespace Digi.Utils
                 {CONTROL_PREFIX+"prevtoolbar", MyControlsSpace.TOOLBAR_DOWN},
                 {CONTROL_PREFIX+"nextitem", MyControlsSpace.TOOLBAR_NEXT_ITEM},
                 {CONTROL_PREFIX+"previtem", MyControlsSpace.TOOLBAR_PREV_ITEM},
-                {CONTROL_PREFIX+"stationrotation", MyControlsSpace.STATION_ROTATION},
+                {CONTROL_PREFIX+"cubesizemode", MyControlsSpace.CUBE_BUILDER_CUBESIZE_MODE},
+                {CONTROL_PREFIX+"stationrotation", MyControlsSpace.FREE_ROTATION},
                 {CONTROL_PREFIX+"cyclesymmetry", MyControlsSpace.SYMMETRY_SWITCH},
                 {CONTROL_PREFIX+"symmetry", MyControlsSpace.USE_SYMMETRY},
                 {CONTROL_PREFIX+"cuberotatey+", MyControlsSpace.CUBE_ROTATE_VERTICAL_POSITIVE},
@@ -579,10 +581,42 @@ namespace Digi.Utils
             };
         }
         
+        public static void Init()
+        {
+            MyAPIGateway.GuiControlCreated += GUICreated;
+        }
+        
+        public static void Close()
+        {
+            MyAPIGateway.GuiControlCreated -= GUICreated;
+        }
+        
+        public static void GUICreated(object obj)
+        {
+            var ui = obj.ToString();
+            
+            if(ui == "Sandbox.Game.Gui.MyGuiScreenChat")
+                menuInChat = 2; // need to skip one tick because enter is still being registered as new-pressed this tick
+        }
+        
+        public static void Update()
+        {
+            if(menuInChat > 0)
+            {
+                if(menuInChat > 1)
+                    menuInChat--;
+                else if(MyAPIGateway.Input.IsNewGameControlPressed(MyControlsSpace.CHAT_SCREEN) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.Escape))
+                    menuInChat = 0;
+            }
+        }
+        
         public static bool IsInputReadable()
         {
-            // TODO detect: chat, escape menu, F10 and F11 menus, mission screens, yes/no notifications
-            return MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None;
+            // TODO detect properly: escape menu, F10 and F11 menus, mission screens, yes/no notifications.
+            // I can detect all of the above with the GUICreated event except for the F11 menu, but I can't reliably know when they're closed, so not going to use them.
+            
+            // HACK > whitelist stuff, not allowed anymore
+            return menuInChat == 0; // && MyGuiScreenGamePlay.ActiveGameplayScreen == null && MyGuiScreenTerminal.GetCurrentScreen() == MyTerminalPageEnum.None;
         }
         
         public static void AppendNiceNamePrefix(string key, object obj, StringBuilder str)

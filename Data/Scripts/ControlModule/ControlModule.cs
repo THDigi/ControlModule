@@ -7,10 +7,8 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
-using SpaceEngineers.Game.ModAPI.Ingame;
 using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Input;
@@ -21,9 +19,6 @@ using VRage.Utils;
 using VRageMath;
 
 using Digi.Utils;
-
-using Ingame = Sandbox.ModAPI.Ingame;
-
 
 // TODO - maybe an option to only allow one controller block to use inputs at a time?
 // TODO - 'pressed' state to test for NewPressed to avoid stuff like F being called when you just get in the cockpit?
@@ -68,6 +63,8 @@ namespace Digi.ControlModule
             Log.Info("Initialized.");
             init = true;
             
+            InputHandler.Init();
+            
             MyAPIGateway.Utilities.MessageEntered += MessageEntered;
             //MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
             
@@ -82,6 +79,8 @@ namespace Digi.ControlModule
                 if(init)
                 {
                     init = false;
+                    
+                    InputHandler.Close();
                     
                     MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
                     //MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControlGetter; // TODO use when RedrawControl() and UpdateVisual() work together
@@ -117,7 +116,7 @@ namespace Digi.ControlModule
                 if(!MyAPIGateway.Entities.EntityExists(entId))
                     return;
                 
-                var pb = MyAPIGateway.Entities.GetEntityById(entId) as Ingame.IMyProgrammableBlock;
+                var pb = MyAPIGateway.Entities.GetEntityById(entId) as IMyProgrammableBlock;
                 
                 if(pb == null)
                     return;
@@ -375,7 +374,7 @@ namespace Digi.ControlModule
                 tc.AddControl<TBlock>(p);
             }
             
-            if(typeof(TBlock) == typeof(Ingame.IMyProgrammableBlock))
+            if(typeof(TBlock) == typeof(IMyProgrammableBlock))
             {
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
                 c.Title = MyStringId.GetOrCompute("Run on input");
@@ -531,7 +530,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(block is Ingame.IMyProgrammableBlock || block is IMyTimerBlock)
+                if(block is IMyProgrammableBlock || block is IMyTimerBlock)
                 {
                     var l = block.GameLogic.GetAs<ControlModule>();
                     
@@ -563,6 +562,8 @@ namespace Digi.ControlModule
                     
                     Init();
                 }
+                
+                InputHandler.Update();
                 
                 if(showInputs)
                 {
@@ -710,10 +711,7 @@ namespace Digi.ControlModule
                     
                     MyAPIGateway.Utilities.ShowNotification(keys.ToString(), 17, MyFontEnum.White);
                     MyAPIGateway.Utilities.ShowNotification(mouse.ToString(), 17, MyFontEnum.White);
-                    if(gamepad != null)
-                        MyAPIGateway.Utilities.ShowNotification(gamepad.ToString(), 17, MyFontEnum.White);
-                    else
-                        MyAPIGateway.Utilities.ShowNotification("Gamepad: (not connected or not enabled)", 17, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification(gamepad != null ? gamepad.ToString() : "Gamepad: (not connected or not enabled)", 17, MyFontEnum.White);
                     MyAPIGateway.Utilities.ShowNotification(controls.ToString(), 17, MyFontEnum.White);
                 }
             }
@@ -817,13 +815,13 @@ namespace Digi.ControlModule
             }
         }
     }
-
+    
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_MyProgrammableBlock))]
     public class ProgrammableBlock : ControlModule { }
-
+    
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TimerBlock))]
     public class TimerBlock : ControlModule { }
-
+    
     public class ControlModule : MyGameLogicComponent
     {
         public ControlCombination input = null;
@@ -859,7 +857,7 @@ namespace Digi.ControlModule
         
         private static byte skipSpeedCounter = 30;
         private static readonly StringBuilder str = new StringBuilder();
-        private static readonly List<Ingame.IMyTerminalBlock> blocks = new List<Ingame.IMyTerminalBlock>();
+        private static readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
         
         private const string TIMESPAN_FORMAT = @"mm\:ss\.f";
         
@@ -898,7 +896,7 @@ namespace Digi.ControlModule
                 if(ControlModuleMod.redrawControlsPB == null)
                 {
                     ControlModuleMod.redrawControlsPB = new List<IMyTerminalControl>();
-                    ControlModuleMod.CreateUIControls<Ingame.IMyProgrammableBlock>(ControlModuleMod.redrawControlsPB);
+                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.redrawControlsPB);
                 }
             }
             
@@ -1678,7 +1676,7 @@ namespace Digi.ControlModule
         
         private bool CheckBlocks()
         {
-            var controller = MyAPIGateway.Session.ControlledObject as Ingame.IMyShipController;
+            var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
             
             if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsWorking)
             {
@@ -1781,7 +1779,7 @@ namespace Digi.ControlModule
                 {
                     if(runOnInput)
                     {
-                        var pb = Entity as Ingame.IMyProgrammableBlock;
+                        var pb = Entity as IMyProgrammableBlock;
                         pb.ApplyAction("Run");
                     }
                 }
