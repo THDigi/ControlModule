@@ -853,7 +853,6 @@ namespace Digi.ControlModule
         private long lastReleaseTime = 0;
         private bool lastGridCheck = false;
         private bool lastNameCheck = false;
-        private byte skipGridCheck = byte.MaxValue - 5;
         private byte skipNameCheck = byte.MaxValue - 5;
         private byte skipSpeed = 30;
         private byte propertiesChanged = 0;
@@ -1706,7 +1705,6 @@ namespace Digi.ControlModule
                 {
                     lastGridCheck = false;
                     lastNameCheck = false;
-                    skipGridCheck = byte.MaxValue - 5;
                     skipNameCheck = byte.MaxValue - 5;
                 }
 
@@ -1743,33 +1741,9 @@ namespace Digi.ControlModule
                     return false;
             }
 
-            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId) // must be the same grid or connected grid
-            {
-                if(++skipGridCheck >= skipSpeed) // if not, check if it's in the same grid system every once in a while since this isn't fast
-                {
-                    skipGridCheck = 0;
-
-                    var gridSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(controller.CubeGrid as IMyCubeGrid);
-
-                    lastGridCheck = false;
-                    blocks.Clear();
-                    gridSystem.GetBlocks(blocks);
-
-                    for(int i = 0; i < blocks.Count; i++)
-                    {
-                        if(blocks[i].CubeGrid.EntityId == block.CubeGrid.EntityId) // check if timer/PB's grid is in controller's grid system
-                        {
-                            lastGridCheck = true;
-                            break;
-                        }
-                    }
-
-                    blocks.Clear();
-                }
-
-                if(!lastGridCheck)
-                    return false;
-            }
+            // must be the same grid or connected grid
+            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId && MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(controller.CubeGrid) != MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(block.CubeGrid))
+                return false;
 
             return true;
         }
