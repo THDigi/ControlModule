@@ -883,9 +883,7 @@ namespace Digi
             if(gamepadBindings.ContainsKey(control))
             {
                 var obj = gamepadBindings[control];
-
-                MyAPIGateway.Utilities.ShowNotification(control + " bound to " + obj, 16);
-
+                
                 if(obj is MyJoystickButtonsEnum)
                 {
                     return (newPress ? MyAPIGateway.Input.IsJoystickButtonNewPressed((MyJoystickButtonsEnum)obj) : MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)obj));
@@ -894,10 +892,6 @@ namespace Digi
                 {
                     return (newPress ? MyAPIGateway.Input.IsJoystickAxisNewPressed((MyJoystickAxesEnum)obj) : MyAPIGateway.Input.IsJoystickAxisPressed((MyJoystickAxesEnum)obj));
                 }
-            }
-            else
-            {
-                MyAPIGateway.Utilities.ShowNotification(control + " has no gamepad alias", 16);
             }
 
             return false;
