@@ -4,21 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
+using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Input;
-using VRage.ObjectBuilders;
-using VRage.Game.Components;
 using VRage.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
-
-using Digi.Utils;
 
 // TODO - maybe an option to only allow one controller block to use inputs at a time?
 // TODO - 'pressed' state to test for NewPressed to avoid stuff like F being called when you just get in the cockpit?
@@ -26,6 +25,7 @@ using Digi.Utils;
 
 namespace Digi.ControlModule
 {
+    #region Control Module main
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class ControlModuleMod : MySessionComponentBase
     {
@@ -36,7 +36,6 @@ namespace Digi.ControlModule
 
         public static bool init { get; private set; }
         public static bool showInputs = false;
-        public static bool testAfterSimulation = false;
 
         public static List<IMyTerminalControl> redrawControlsTimer = null;
         public static List<IMyTerminalControl> redrawControlsPB = null;
@@ -593,7 +592,7 @@ namespace Digi.ControlModule
                         }
                         else if(kv.Value is MyStringId)
                         {
-                            if(MyAPIGateway.Input.IsGameControlPressed((MyStringId)kv.Value))
+                            if(InputHandler.IsGameControlPressed((MyStringId)kv.Value, false))
                                 controls.Append(kv.Key).Append(separator);
                         }
                         else if(kv.Value is MyMouseButtonsEnum)
@@ -668,6 +667,18 @@ namespace Digi.ControlModule
                                             controls.Append(view.X).Append(',');
                                             controls.Append(view.Y).Append(',');
                                             controls.Append(view.Z).Append(separator);
+                                        }
+                                    }
+                                    break;
+                                case InputHandler.CONTROL_PREFIX + "movement":
+                                    {
+                                        var movement = MyAPIGateway.Input.GetPositionDelta();
+                                        if(movement.LengthSquared() > 0)
+                                        {
+                                            controls.Append(text).Append('=');
+                                            controls.Append(movement.X).Append(',');
+                                            controls.Append(movement.Y).Append(',');
+                                            controls.Append(movement.Z).Append(separator);
                                         }
                                     }
                                     break;
@@ -806,17 +817,11 @@ namespace Digi.ControlModule
                         showInputs = !showInputs;
                         MyAPIGateway.Utilities.ShowMessage(Log.modName, "Show inputs turned " + (showInputs ? "ON." : "OFF."));
                     }
-                    else if(cmd.StartsWith("updatetype", StringComparison.Ordinal)) // TODO remove?
-                    {
-                        testAfterSimulation = !testAfterSimulation;
-                        MyAPIGateway.Utilities.ShowMessage(Log.modName, "[TEST OPTION] Update type set to: " + (testAfterSimulation ? "after simulation" : "before simulation (default)"));
-                    }
                     else
                     {
                         MyAPIGateway.Utilities.ShowMessage(Log.modName, "Command list:");
                         MyAPIGateway.Utilities.ShowMessage("/cm help ", " shows the list of inputs.");
                         MyAPIGateway.Utilities.ShowMessage("/cm showinputs ", " toggles showing what you press on the HUD.");
-                        MyAPIGateway.Utilities.ShowMessage("/cm updatetype ", " testing purposes, experiment either setting and tell me which feels less laggy.");
                     }
                 }
             }
@@ -827,6 +832,9 @@ namespace Digi.ControlModule
         }
     }
 
+    #endregion Control Module main
+
+    #region Block script attachment
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_MyProgrammableBlock))]
     public class ProgrammableBlock : ControlModule { }
 
@@ -868,11 +876,7 @@ namespace Digi.ControlModule
         private static byte skipSpeedCounter = 30;
         private static readonly StringBuilder str = new StringBuilder();
 
-#if !BRANCH_DEVELOPMENT
-        private static readonly List<Sandbox.ModAPI.Ingame.IMyTerminalBlock> blocks = new List<Sandbox.ModAPI.Ingame.IMyTerminalBlock>();
-#else
         private static readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-#endif
 
         private const string TIMESPAN_FORMAT = @"mm\:ss\.f";
 
@@ -917,12 +921,15 @@ namespace Digi.ControlModule
 
             block.CustomNameChanged += NameChanged;
             NameChanged(block);
-            ReadLegacyName(); // TODO remove after a few months
 
             if(++skipSpeedCounter > 60)
                 skipSpeedCounter = 30;
 
             skipSpeed = skipSpeedCounter;
+
+            // if it has inputs and is PB, fill in the pressedList dictionary ASAP, fixes PB getting dictionary exceptions on load
+            if(MyAPIGateway.Multiplayer.IsServer && block is IMyProgrammableBlock && (readAllInputs || input != null))
+                UpdatePressed(true);
         }
 
         public override void Close()
@@ -1257,6 +1264,8 @@ namespace Digi.ControlModule
                 }
                 else if(input != null)
                 {
+                    var assigned = new List<string>();
+
                     foreach(var obj in input.combination)
                     {
                         var key = InputHandler.inputNames[obj];
@@ -1267,35 +1276,105 @@ namespace Digi.ControlModule
                         str.Clear();
                         str.Append("Internal name: " + key);
 
+                        assigned.Clear();
+
                         if(obj is MyStringId)
                         {
-                            var control = MyAPIGateway.Input.GetGameControl((MyStringId)obj);
+                            var controlId = (MyStringId)obj;
 
-                            str.Append("\nCurrently assigned to: ");
-                            int inputs = 0;
+                            var mouse = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Mouse);
+                            if(mouse != null)
+                                assigned.Add("Mouse: " + mouse);
 
-                            if(control.GetMouseControl() != MyMouseButtonsEnum.None)
+                            var kb1 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Keyboard);
+                            if(kb1 != null)
+                                assigned.Add("Keyboard: " + kb1);
+
+                            var kb2 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.KeyboardSecond);
+                            if(kb2 != null)
+                                assigned.Add("Keyboard (alternate): " + kb2);
+
+                            var gamepad = GetControlAssigned(controlId, MyGuiInputDeviceEnum.None); // using None as gamepad
+                            if(gamepad != null)
+                                assigned.Add("Gamepad: " + gamepad);
+                        }
+                        else if(obj is string)
+                        {
+                            var text = (string)obj;
+
+                            switch(text)
                             {
-                                str.Append(InputHandler.inputNiceNames[InputHandler.inputNames[control.GetMouseControl()]]);
-                                inputs++;
+                                case InputHandler.CONTROL_PREFIX + "view":
+                                    {
+                                        // HACK hardcoded controls
+                                        assigned.Add("Mouse: Sensor");
+
+                                        {
+                                            var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.Keyboard);
+                                            var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.Keyboard);
+                                            var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                            var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
+
+                                            if(u != null && d != null && l != null && r != null)
+                                                assigned.Add("Keyboard: " + u + ", " + l + ", " + d + ", " + r);
+                                        }
+
+                                        {
+                                            var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+
+                                            if(u != null && d != null && l != null && r != null)
+                                                assigned.Add("Keyboard (alternate): " + u + ", " + l + ", " + d + ", " + r);
+                                        }
+
+                                        assigned.Add("Gamepad: Right Stick");
+                                        break;
+                                    }
+                                case InputHandler.CONTROL_PREFIX + "movement":
+                                    {
+                                        {
+                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Mouse);
+                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Mouse);
+                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Mouse);
+                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
+
+                                            if(f != null && b != null && l != null && r != null)
+                                                assigned.Add("Mouse: " + f + ", " + l + ", " + b + ", " + r);
+                                        }
+
+                                        {
+                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Keyboard);
+                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Keyboard);
+                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
+
+                                            if(f != null && b != null && l != null && r != null)
+                                                assigned.Add("Keyboard: " + f + ", " + l + ", " + b + ", " + r);
+                                        }
+
+                                        {
+                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+
+                                            if(f != null && b != null && l != null && r != null)
+                                                assigned.Add("Keyboard (alternate): " + f + ", " + l + ", " + b + ", " + r);
+                                        }
+
+                                        assigned.Add("Gamepad: Left Stick"); // HACK hardcoded controls
+                                        break;
+                                    }
                             }
+                        }
 
-                            if(control.GetKeyboardControl() != MyKeys.None)
+                        if(assigned.Count > 0)
+                        {
+                            foreach(var a in assigned)
                             {
-                                if(inputs > 0)
-                                    str.Append(" or ");
-
-                                str.Append(InputHandler.inputNiceNames[InputHandler.inputNames[control.GetKeyboardControl()]]);
-                                inputs++;
-                            }
-
-                            if(control.GetSecondKeyboardControl() != MyKeys.None)
-                            {
-                                if(inputs > 0)
-                                    str.Append(" or ");
-
-                                str.Append(InputHandler.inputNiceNames[InputHandler.inputNames[control.GetSecondKeyboardControl()]]);
-                                inputs++;
+                                str.Append('\n').Append(a);
                             }
                         }
 
@@ -1318,6 +1397,25 @@ namespace Digi.ControlModule
             {
                 Log.Error(e);
             }
+        }
+
+        private static string GetControlAssigned(MyStringId controlId, MyGuiInputDeviceEnum device)
+        {
+            var control = MyAPIGateway.Input.GetGameControl(controlId);
+
+            switch(device)
+            {
+                case MyGuiInputDeviceEnum.Mouse:
+                    return (control.GetMouseControl() == MyMouseButtonsEnum.None ? null : InputHandler.inputNiceNames[InputHandler.inputNames[control.GetMouseControl()]]);
+                case MyGuiInputDeviceEnum.Keyboard:
+                    return (control.GetKeyboardControl() == MyKeys.None ? null : InputHandler.inputNiceNames[InputHandler.inputNames[control.GetKeyboardControl()]]);
+                case MyGuiInputDeviceEnum.KeyboardSecond:
+                    return (control.GetSecondKeyboardControl() == MyKeys.None ? null : InputHandler.inputNiceNames[InputHandler.inputNames[control.GetSecondKeyboardControl()]]);
+                case MyGuiInputDeviceEnum.None: // using None as gamepad
+                    return (InputHandler.gamepadBindings.ContainsKey(controlId) ? InputHandler.inputNiceNames[InputHandler.inputNames[InputHandler.gamepadBindings[controlId]]] : null);
+            }
+
+            return null;
         }
 
         public void NameChanged(IMyTerminalBlock block)
@@ -1534,21 +1632,130 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(!ControlModuleMod.testAfterSimulation)
-                    Update();
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
+                if(first)
+                {
+                    first = false;
+                    FirstUpdate();
+                }
 
-        public override void UpdateAfterSimulation()
-        {
-            try
-            {
-                if(ControlModuleMod.testAfterSimulation)
-                    Update();
+                if(propertiesChanged > 0 && --propertiesChanged <= 0)
+                {
+                    SaveToName();
+                }
+
+                if(input == null && !readAllInputs)
+                    return;
+
+                bool pressed = CheckBlocks() && IsPressed();
+                bool pressChanged = pressed != lastPressed;
+                long time = DateTime.UtcNow.Ticks;
+
+                if(pressChanged)
+                    lastPressed = pressed;
+
+                var checkedHoldDelayTrigger = (inputState <= 1 ? Math.Round(holdDelayTrigger, 3) : 0);
+                var checkedRepeatDelayTrigger = (inputState <= 1 ? Math.Round(repeatDelayTrigger, 3) : 0);
+                var checkedReleaseDelayTrigger = (inputState >= 1 ? Math.Round(releaseDelayTrigger, 3) : 0);
+
+                bool holdCheck = ((checkedHoldDelayTrigger > 0 && lastPressedTime == 0) || Math.Abs(checkedHoldDelayTrigger) < EPSILON);
+
+                if(pressed) // pressed
+                {
+                    if(pressChanged) // just pressed
+                    {
+                        if(checkedHoldDelayTrigger > 0)
+                            lastPressedTime = time;
+
+                        lastTrigger = 0;
+
+                        // immediate press trigger
+                        if(inputState < 2 && Math.Abs(checkedHoldDelayTrigger) < EPSILON)
+                        {
+                            DebugPrint("Pressed. (block triggered)", 500, MyFontEnum.Green);
+
+                            lastTrigger = time;
+                            Trigger();
+                            return;
+                        }
+                    }
+
+                    // hold delay amount to trigger
+                    if(checkedHoldDelayTrigger > 0 && lastPressedTime > 0)
+                    {
+                        if(time >= (lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)))
+                        {
+                            DebugPrint("Press and hold finished. (block triggered)", 500, MyFontEnum.Blue);
+
+                            lastPressedTime = 0;
+                            lastReleaseTime = 0;
+                            lastTrigger = time;
+                            Trigger();
+                            return;
+                        }
+                        else if(debug)
+                        {
+                            DebugPrint("Press and hold, waiting " + TimeSpan.FromTicks((lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", 17, MyFontEnum.DarkBlue);
+                        }
+                    }
+
+                    // repeat while held pressed
+                    if(checkedRepeatDelayTrigger > 0 && lastTrigger > 0 && holdCheck)
+                    {
+                        if(time >= (lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)))
+                        {
+                            DebugPrint("Repeat wait finished. (block triggered)", 500, MyFontEnum.Blue);
+
+                            lastTrigger = time;
+                            Trigger();
+                            return;
+                        }
+                        else if(debug)
+                        {
+                            DebugPrint("Repeat, waiting " + TimeSpan.FromTicks((lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", 17, MyFontEnum.DarkBlue);
+                        }
+                    }
+                }
+                else // released
+                {
+                    if(pressChanged) // just released
+                    {
+                        lastPressedTime = 0;
+
+                        if(checkedReleaseDelayTrigger > 0 && holdCheck)
+                        {
+                            lastReleaseTime = time;
+                        }
+
+                        // immediate release trigger
+                        if(inputState > 0 && holdCheck && Math.Abs(checkedReleaseDelayTrigger) < EPSILON)
+                        {
+                            DebugPrint("Released. (block triggered)", 500, MyFontEnum.Green);
+
+                            Trigger(true);
+                            return;
+                        }
+                    }
+                }
+
+                // delayed release trigger
+                if(checkedReleaseDelayTrigger > 0 && lastReleaseTime > 0)
+                {
+                    if(pressed || holdCheck) // released OR (+hold undefined OR after delay)
+                    {
+                        if(time >= (lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)))
+                        {
+                            DebugPrint("Delayed release finished. (block triggerred)", 500, MyFontEnum.Blue);
+
+                            lastReleaseTime = 0;
+                            Trigger(true);
+                            return;
+                        }
+                        else if(debug)
+                        {
+                            DebugPrint("Delayed release, waiting " + TimeSpan.FromTicks((lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", 17, MyFontEnum.DarkBlue);
+                        }
+                    }
+                }
             }
             catch(Exception e)
             {
@@ -1565,134 +1772,6 @@ namespace Digi.ControlModule
         {
             if(debug)
                 MyAPIGateway.Utilities.ShowNotification(debugName + ": " + message, timeMs, font);
-        }
-
-        private void Update()
-        {
-            if(first)
-            {
-                first = false;
-                FirstUpdate();
-            }
-
-            if(propertiesChanged > 0 && --propertiesChanged <= 0)
-            {
-                SaveToName();
-            }
-
-            if(input == null && !readAllInputs)
-                return;
-
-            bool pressed = CheckBlocks() && IsPressed();
-            bool pressChanged = pressed != lastPressed;
-            long time = DateTime.UtcNow.Ticks;
-
-            if(pressChanged)
-                lastPressed = pressed;
-
-            var checkedHoldDelayTrigger = (inputState <= 1 ? Math.Round(holdDelayTrigger, 3) : 0);
-            var checkedRepeatDelayTrigger = (inputState <= 1 ? Math.Round(repeatDelayTrigger, 3) : 0);
-            var checkedReleaseDelayTrigger = (inputState >= 1 ? Math.Round(releaseDelayTrigger, 3) : 0);
-
-            bool holdCheck = ((checkedHoldDelayTrigger > 0 && lastPressedTime == 0) || Math.Abs(checkedHoldDelayTrigger) < EPSILON);
-
-            if(pressed) // pressed
-            {
-                if(pressChanged) // just pressed
-                {
-                    if(checkedHoldDelayTrigger > 0)
-                        lastPressedTime = time;
-
-                    lastTrigger = 0;
-
-                    // immediate press trigger
-                    if(inputState < 2 && Math.Abs(checkedHoldDelayTrigger) < EPSILON)
-                    {
-                        DebugPrint("Pressed. (block triggered)", 500, MyFontEnum.Green);
-
-                        lastTrigger = time;
-                        Trigger();
-                        return;
-                    }
-                }
-
-                // hold delay amount to trigger
-                if(checkedHoldDelayTrigger > 0 && lastPressedTime > 0)
-                {
-                    if(time >= (lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)))
-                    {
-                        DebugPrint("Press and hold finished. (block triggered)", 500, MyFontEnum.Blue);
-
-                        lastPressedTime = 0;
-                        lastReleaseTime = 0;
-                        lastTrigger = time;
-                        Trigger();
-                        return;
-                    }
-                    else if(debug)
-                    {
-                        DebugPrint("Press and hold, waiting " + TimeSpan.FromTicks((lastPressedTime + GetTimeTicks(checkedHoldDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
-                    }
-                }
-
-                // repeat while held pressed
-                if(checkedRepeatDelayTrigger > 0 && lastTrigger > 0 && holdCheck)
-                {
-                    if(time >= (lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)))
-                    {
-                        DebugPrint("Repeat wait finished. (block triggered)", 500, MyFontEnum.Blue);
-
-                        lastTrigger = time;
-                        Trigger();
-                        return;
-                    }
-                    else if(debug)
-                    {
-                        DebugPrint("Repeat, waiting " + TimeSpan.FromTicks((lastTrigger + GetTimeTicks(checkedRepeatDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
-                    }
-                }
-            }
-            else // released
-            {
-                if(pressChanged) // just released
-                {
-                    lastPressedTime = 0;
-
-                    if(checkedReleaseDelayTrigger > 0 && holdCheck)
-                    {
-                        lastReleaseTime = time;
-                    }
-
-                    // immediate release trigger
-                    if(inputState > 0 && holdCheck && Math.Abs(checkedReleaseDelayTrigger) < EPSILON)
-                    {
-                        DebugPrint("Released. (block triggered)", 500, MyFontEnum.Green);
-
-                        Trigger(true);
-                        return;
-                    }
-                }
-            }
-
-            // delayed release trigger
-            if(checkedReleaseDelayTrigger > 0 && lastReleaseTime > 0)
-            {
-                if(pressed || holdCheck) // released OR (+hold undefined OR after delay)
-                {
-                    if(time >= (lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)))
-                    {
-                        DebugPrint("Delayed release finished. (block triggerred)", 500, MyFontEnum.Blue);
-
-                        lastReleaseTime = 0;
-                        Trigger(true);
-                        return;
-                    }
-                    else if(debug)
-                    {
-                        DebugPrint("Delayed release, waiting " + TimeSpan.FromTicks((lastReleaseTime + GetTimeTicks(checkedReleaseDelayTrigger)) - time).ToString(TIMESPAN_FORMAT) + "...", (ControlModuleMod.testAfterSimulation ? 16 : 17), MyFontEnum.DarkBlue);
-                    }
-                }
-            }
         }
 
         private bool CheckBlocks()
@@ -1781,6 +1860,8 @@ namespace Digi.ControlModule
                 }
                 else // but clients do need to since PBs run server-side only
                 {
+                    // TODO optimize, use bytes as input index?
+
                     str.Clear();
                     str.Append(Entity.EntityId);
 
@@ -1817,7 +1898,7 @@ namespace Digi.ControlModule
 
                     var bytes = ControlModuleMod.encode.GetBytes(str.ToString());
 
-                    if(bytes.Length > 4096) // TODO can this message even be larger than 4096 bytes?
+                    if(bytes.Length > 4096)
                     {
                         Log.Error("Network message was larger than 4096 bytes! Raw data:\n" + str.ToString());
                     }
@@ -1832,23 +1913,23 @@ namespace Digi.ControlModule
         private void UpdatePressed(bool released = false)
         {
             pressedList.Clear();
-
             var objects = (readAllInputs ? InputHandler.inputValuesList : input.combination);
-
+            
             if(objects.Count == 0)
                 return;
-
+            
             foreach(var o in objects)
             {
                 if(released)
                 {
                     var text = o as string;
-
+                    
                     if(text != null)
                     {
                         switch(text) // analog inputs should send 0 when released to allow simplier PB scripts
                         {
                             case InputHandler.CONTROL_PREFIX + "view":
+                            case InputHandler.CONTROL_PREFIX + "movement":
                             case InputHandler.MOUSE_PREFIX + "analog":
                                 pressedList.Add(text, Vector3.Zero);
                                 continue;
@@ -1865,7 +1946,7 @@ namespace Digi.ControlModule
                                 continue;
                         }
                     }
-
+                    
                     continue; // released inputs should not be added printed
                 }
 
@@ -1876,7 +1957,7 @@ namespace Digi.ControlModule
                 }
                 else if(o is MyStringId)
                 {
-                    if(MyAPIGateway.Input.IsGameControlPressed((MyStringId)o))
+                    if(InputHandler.IsGameControlPressed((MyStringId)o, false))
                         pressedList.Add(InputHandler.inputNames[o], null);
                 }
                 else if(o is MyMouseButtonsEnum)
@@ -1903,6 +1984,9 @@ namespace Digi.ControlModule
                         // analog ones are always present
                         case InputHandler.CONTROL_PREFIX + "view":
                             pressedList.Add(text, InputHandler.GetFullRotation());
+                            continue;
+                        case InputHandler.CONTROL_PREFIX + "movement":
+                            pressedList.Add(text, MyAPIGateway.Input.GetPositionDelta());
                             continue;
                         case InputHandler.MOUSE_PREFIX + "analog":
                             pressedList.Add(text, new Vector3(MyAPIGateway.Input.GetMouseXForGamePlay(), MyAPIGateway.Input.GetMouseYForGamePlay(), MyAPIGateway.Input.DeltaMouseScrollWheelValue()));
@@ -1960,199 +2044,6 @@ namespace Digi.ControlModule
                 }
             }
         }
-
-
-
-
-
-        // Legacy name tag system, still kept for compatibility
-
-        private void ReadLegacyName()
-        {
-            var block = Entity as IMyTerminalBlock;
-            var name = block.CustomName.Trim().ToLower();
-
-            string arg;
-            double d;
-            int index = name.IndexOf("+input:", StringComparison.Ordinal);
-
-            if(index == -1)
-                return;
-
-
-            {
-                inputCheck = (byte)(name.Contains("+any") ? 0 : 1);
-                debug = name.Contains("+debug");
-                //noInfo = name.Contains("+noinfo"); // no longer relevant
-
-                var subName = name.Substring(index + "+input:".Length).Trim();
-
-                if(subName.Length > 0)
-                {
-                    string inputStr = null;
-
-                    if(subName[0] == '"')
-                    {
-                        if(subName.Length > 1)
-                        {
-                            index = subName.IndexOf('"', 1);
-
-                            if(index != -1)
-                                inputStr = subName.Substring(1, index - 1);
-                        }
-                    }
-                    else
-                    {
-                        index = subName.IndexOf(' ');
-
-                        if(index != -1)
-                            inputStr = subName.Substring(0, index);
-                        else
-                            inputStr = subName.Substring(0);
-                    }
-
-                    if(inputStr != null)
-                    {
-                        if(inputStr == "all")
-                            readAllInputs = true;
-                        else
-                            input = ControlCombination.CreateFrom(inputStr, false);
-                    }
-                }
-            }
-
-            index = name.IndexOf("+filter:", StringComparison.Ordinal);
-
-            if(index != -1)
-            {
-                var subName = name.Substring(index + "+filter:".Length).Trim();
-
-                if(subName.Length > 0)
-                {
-                    if(subName[0] == '"')
-                    {
-                        if(subName.Length > 1)
-                        {
-                            index = subName.IndexOf('"', 1);
-
-                            if(index != -1)
-                                filter = subName.Substring(1, index - 1);
-                        }
-                    }
-                    else
-                    {
-                        index = subName.IndexOf(' ');
-
-                        if(index != -1)
-                            filter = subName.Substring(0, index);
-                        else
-                            filter = subName.Substring(0);
-                    }
-                }
-            }
-
-            index = name.IndexOf("+repeat", StringComparison.Ordinal);
-
-            if(index != -1)
-            {
-                repeatDelayTrigger = 0.016;
-                index += "+repeat:".Length;
-
-                if(name.Length > index && name[index - 1] == ':')
-                {
-                    var endIndex = name.IndexOf(' ', index);
-
-                    if(endIndex != -1)
-                        arg = name.Substring(index, endIndex - index);
-                    else
-                        arg = name.Substring(index);
-
-                    if(double.TryParse(arg, out d))
-                        repeatDelayTrigger = Math.Round(Math.Max(d, 0.016), 3);
-                }
-            }
-
-            index = name.IndexOf("+releaseonly", StringComparison.Ordinal);
-
-            if(index != -1)
-            {
-                inputState = 2;
-                index += "+releaseonly:".Length;
-
-                if(name.Length > index && name[index - 1] == ':')
-                {
-                    var endIndex = name.IndexOf(' ', index);
-
-                    if(endIndex != -1)
-                        arg = name.Substring(index, endIndex - index);
-                    else
-                        arg = name.Substring(index);
-
-                    if(double.TryParse(arg, out d))
-                        releaseDelayTrigger = Math.Round(Math.Max(d, 0), 3);
-                }
-            }
-            else
-            {
-                index = name.IndexOf("+release", StringComparison.Ordinal);
-
-                if(index != -1)
-                {
-                    inputState = 1;
-                    index += "+release:".Length;
-
-                    if(name.Length > index && name[index - 1] == ':')
-                    {
-                        var endIndex = name.IndexOf(' ', index);
-
-                        if(endIndex != -1)
-                            arg = name.Substring(index, endIndex - index);
-                        else
-                            arg = name.Substring(index);
-
-                        if(double.TryParse(arg, out d))
-                            releaseDelayTrigger = Math.Round(Math.Max(d, 0), 3);
-                    }
-                }
-            }
-
-            index = name.IndexOf("+hold:", StringComparison.Ordinal);
-
-            if(index != -1)
-            {
-                index += "+hold:".Length;
-                var endIndex = name.IndexOf(' ', index);
-
-                if(endIndex != -1)
-                    arg = name.Substring(index, endIndex - index);
-                else
-                    arg = name.Substring(index);
-
-                if(double.TryParse(arg, out d))
-                    holdDelayTrigger = Math.Round(Math.Max(d, 0.016), 3);
-            }
-
-            //if(debug)
-            debugName = GetNameNoFlags();
-
-            SaveToName(debugName);
-        }
-
-        private string GetNameNoFlags()
-        {
-            var block = Entity as IMyTerminalBlock;
-            var name = block.CustomName;
-            name = Regex.Replace(name, "\\+input:\"(.+)\"", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+input:[^\s]+", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, "\\+filter:\"(.+)\"", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+filter:[^\s]+", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+repeat(:([\d.]+))?", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+(releaseonly|release)(:([\d.]+))?", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+hold:[\d.]+", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+any", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+noinfo", "", RegexOptions.IgnoreCase);
-            name = Regex.Replace(name, @"\+debug", "", RegexOptions.IgnoreCase);
-            return name.Trim();
-        }
     }
+    #endregion Block script attachment
 }

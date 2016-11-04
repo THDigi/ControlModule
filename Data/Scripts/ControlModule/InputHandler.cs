@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using Sandbox.Game;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRage.Input;
+using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using Digi.Utils;
-using VRage.ModAPI;
-using VRage.Game.ModAPI;
 
-namespace Digi.Utils
+namespace Digi
 {
     public class ControlCombination
     {
@@ -36,27 +35,38 @@ namespace Digi.Utils
                 {
                     var control = MyAPIGateway.Input.GetGameControl((MyStringId)o);
 
-                    if(control.GetMouseControl() != MyMouseButtonsEnum.None)
+                    if(MyAPIGateway.Input.IsJoystickLastUsed && InputHandler.gamepadBindings.ContainsKey(control.GetGameControlEnum()))
                     {
-                        combined.Add(InputHandler.inputNames[control.GetMouseControl()]);
-                    }
-                    else if(control.GetKeyboardControl() != MyKeys.None)
-                    {
-                        combined.Add(InputHandler.inputNames[control.GetKeyboardControl()]);
-                    }
-                    else if(control.GetSecondKeyboardControl() != MyKeys.None)
-                    {
-                        combined.Add(InputHandler.inputNames[control.GetSecondKeyboardControl()]);
+                        var gamepadInput = InputHandler.gamepadBindings[control.GetGameControlEnum()];
+
+                        if(xboxChars && InputHandler.xboxCodes.ContainsKey(o))
+                            combined.Add(InputHandler.xboxCodes[o].ToString());
+                        else
+                            combined.Add(InputHandler.inputNames[gamepadInput]);
                     }
                     else
                     {
-                        combined.Add(InputHandler.inputNames[control]);
+                        if(control.GetMouseControl() != MyMouseButtonsEnum.None)
+                        {
+                            combined.Add(InputHandler.inputNames[control.GetMouseControl()]);
+                        }
+                        else if(control.GetKeyboardControl() != MyKeys.None)
+                        {
+                            combined.Add(InputHandler.inputNames[control.GetKeyboardControl()]);
+                        }
+                        else if(control.GetSecondKeyboardControl() != MyKeys.None)
+                        {
+                            combined.Add(InputHandler.inputNames[control.GetSecondKeyboardControl()]);
+                        }
+                        else
+                        {
+                            combined.Add(InputHandler.inputNames[control]);
+                        }
                     }
                 }
-                else if(xboxChars && (o is MyJoystickAxesEnum || o is MyJoystickButtonsEnum))
+                else if(xboxChars && (o is MyJoystickAxesEnum || o is MyJoystickButtonsEnum) && InputHandler.xboxCodes.ContainsKey(o))
                 {
-                    char c = InputHandler.xboxCodes.GetValueOrDefault(o, ' ');
-                    combined.Add(c == ' ' ? InputHandler.inputNames[o] : c.ToString());
+                    combined.Add(InputHandler.xboxCodes[o].ToString());
                 }
                 else
                 {
@@ -114,6 +124,7 @@ namespace Digi.Utils
         public static Dictionary<string, string> inputNiceNames = null;
         public static List<object> inputValuesList = null;
         public static List<string> inputAnalogList = null;
+        public static Dictionary<MyStringId, object> gamepadBindings = null;
         public static Dictionary<object, char> xboxCodes = null;
         public const string MOUSE_PREFIX = "m.";
         public const string GAMEPAD_PREFIX = "g.";
@@ -295,6 +306,7 @@ namespace Digi.Utils
                 
                 // game controls
                 {CONTROL_PREFIX+"view", CONTROL_PREFIX+"view"},
+                {CONTROL_PREFIX+"movement", CONTROL_PREFIX+"movement"},
                 {CONTROL_PREFIX+"forward", MyControlsSpace.FORWARD},
                 {CONTROL_PREFIX+"backward", MyControlsSpace.BACKWARD},
                 {CONTROL_PREFIX+"strafeleft", MyControlsSpace.STRAFE_LEFT},
@@ -495,6 +507,7 @@ namespace Digi.Utils
             inputNiceNames[GAMEPAD_PREFIX + "rsright"] = "Right Stick Right";
 
             inputNiceNames[CONTROL_PREFIX + "view"] = "View (analog)";
+            inputNiceNames[CONTROL_PREFIX + "movement"] = "Movement (analog)";
             inputNiceNames[CONTROL_PREFIX + "strafeleft"] = "Strafe Left";
             inputNiceNames[CONTROL_PREFIX + "straferight"] = "Strafe Right";
             inputNiceNames[CONTROL_PREFIX + "jump"] = "Up/Jump";
@@ -581,6 +594,40 @@ namespace Digi.Utils
                 { MyJoystickAxesEnum.Zneg, '\xe007' },
                 { MyJoystickAxesEnum.Zpos, '\xe008' },
             };
+
+            // these are the combined gamepad controls for spaceship context
+            gamepadBindings = new Dictionary<MyStringId, object>() // HACK remove once we get direct access to gamepad bindings
+            {
+                //{ MyControlsGUI.MAIN_MENU, MyJoystickButtonsEnum.J08 },
+
+                { MyControlsSpace.CONTROL_MENU, MyJoystickButtonsEnum.J07 },
+                { MyControlsSpace.FORWARD, MyJoystickAxesEnum.Yneg },
+                { MyControlsSpace.BACKWARD, MyJoystickAxesEnum.Ypos },
+                { MyControlsSpace.STRAFE_LEFT, MyJoystickAxesEnum.Xneg },
+                { MyControlsSpace.STRAFE_RIGHT, MyJoystickAxesEnum.Xpos },
+                { MyControlsSpace.PRIMARY_TOOL_ACTION, MyJoystickAxesEnum.Zneg },
+                { MyControlsSpace.SECONDARY_TOOL_ACTION, MyJoystickAxesEnum.Zpos },
+                { MyControlsSpace.COPY_PASTE_ACTION, MyJoystickAxesEnum.Zneg },
+                { MyControlsSpace.ROTATION_LEFT, MyJoystickAxesEnum.RotationXneg },
+                { MyControlsSpace.ROTATION_RIGHT, MyJoystickAxesEnum.RotationXpos },
+                { MyControlsSpace.ROTATION_UP, MyJoystickAxesEnum.RotationYneg },
+                { MyControlsSpace.ROTATION_DOWN, MyJoystickAxesEnum.RotationYpos },
+                { MyControlsSpace.JUMP, MyJoystickButtonsEnum.J01 },
+                { MyControlsSpace.USE, MyJoystickButtonsEnum.J03 },
+                { MyControlsSpace.ROLL_LEFT, MyJoystickButtonsEnum.J05 },
+                { MyControlsSpace.ROLL_RIGHT, MyJoystickButtonsEnum.J06 },
+                { MyControlsSpace.SPRINT, MyJoystickButtonsEnum.J09 },
+                { MyControlsSpace.CAMERA_MODE, MyJoystickButtonsEnum.J10 },
+                { MyControlsSpace.TOOLBAR_UP, MyJoystickButtonsEnum.JDUp },
+                { MyControlsSpace.TOOLBAR_DOWN, MyJoystickButtonsEnum.JDDown },
+                { MyControlsSpace.TOOLBAR_NEXT_ITEM, MyJoystickButtonsEnum.JDRight },
+                { MyControlsSpace.TOOLBAR_PREV_ITEM, MyJoystickButtonsEnum.JDLeft },
+                { MyControlsSpace.TOGGLE_REACTORS, MyJoystickButtonsEnum.J04 },
+                
+                // TODO fix this double bind when the game also fixes it...
+                { MyControlsSpace.CROUCH, MyJoystickButtonsEnum.J02 },
+                { MyControlsSpace.LANDING_GEAR, MyJoystickButtonsEnum.J02 },
+            };
         }
 
         public static bool IsInputReadable()
@@ -638,7 +685,7 @@ namespace Digi.Utils
                     if(ignoreGameControls)
                         continue;
 
-                    bool pressed = justPressed ? MyAPIGateway.Input.IsNewGameControlPressed((MyStringId)o) : MyAPIGateway.Input.IsGameControlPressed((MyStringId)o);
+                    bool pressed = IsGameControlPressed((MyStringId)o, justPressed);
 
                     if(any == pressed)
                         return any;
@@ -646,7 +693,7 @@ namespace Digi.Utils
                 else if(o is MyMouseButtonsEnum)
                 {
                     bool pressed = justPressed ? MyAPIGateway.Input.IsNewMousePressed((MyMouseButtonsEnum)o) : MyAPIGateway.Input.IsMousePressed((MyMouseButtonsEnum)o);
-                    
+
                     if(any == pressed)
                         return any;
                 }
@@ -672,6 +719,10 @@ namespace Digi.Utils
                     {
                         case InputHandler.CONTROL_PREFIX + "view":
                             if(any == GetFullRotation().LengthSquared() > 0)
+                                return any;
+                            break;
+                        case InputHandler.CONTROL_PREFIX + "movement":
+                            if(any == MyAPIGateway.Input.GetPositionDelta().LengthSquared() > 0)
                                 return any;
                             break;
                         case InputHandler.MOUSE_PREFIX + "analog":
@@ -819,8 +870,37 @@ namespace Digi.Utils
 
         public static Vector3 GetFullRotation()
         {
-            var rot = MyAPIGateway.Input.GetRotation();
-            return new Vector3(rot.X, rot.Y, MyAPIGateway.Input.GetRoll());
+            var rotation = MyAPIGateway.Input.GetRotation();
+            // HACK GetRotation() has inverted X and Y
+            return new Vector3(rotation.Y, rotation.X, MyAPIGateway.Input.GetRoll());
+        }
+
+        public static bool IsGameControlPressed(MyStringId control, bool newPress)
+        {
+            if(newPress ? MyAPIGateway.Input.IsNewGameControlPressed(control) : MyAPIGateway.Input.IsGameControlPressed(control))
+                return true;
+
+            if(gamepadBindings.ContainsKey(control))
+            {
+                var obj = gamepadBindings[control];
+
+                MyAPIGateway.Utilities.ShowNotification(control + " bound to " + obj, 16);
+
+                if(obj is MyJoystickButtonsEnum)
+                {
+                    return (newPress ? MyAPIGateway.Input.IsJoystickButtonNewPressed((MyJoystickButtonsEnum)obj) : MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)obj));
+                }
+                else
+                {
+                    return (newPress ? MyAPIGateway.Input.IsJoystickAxisNewPressed((MyJoystickAxesEnum)obj) : MyAPIGateway.Input.IsJoystickAxisPressed((MyJoystickAxesEnum)obj));
+                }
+            }
+            else
+            {
+                MyAPIGateway.Utilities.ShowNotification(control + " has no gamepad alias", 16);
+            }
+
+            return false;
         }
     }
 }
