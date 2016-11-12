@@ -1768,7 +1768,11 @@ namespace Digi.ControlModule
             return (long)(TimeSpan.TicksPerMillisecond * (seconds * 1000));
         }
 
+#if STABLE // HACK >>> STABLE condition
         private void DebugPrint(string message, int timeMs = 500, MyFontEnum font = MyFontEnum.White)
+#else
+        private void DebugPrint(string message, int timeMs = 500, string font = MyFontEnum.White)
+#endif
         {
             if(debug)
                 MyAPIGateway.Utilities.ShowNotification(debugName + ": " + message, timeMs, font);
@@ -1914,16 +1918,16 @@ namespace Digi.ControlModule
         {
             pressedList.Clear();
             var objects = (readAllInputs ? InputHandler.inputValuesList : input.combination);
-            
+
             if(objects.Count == 0)
                 return;
-            
+
             foreach(var o in objects)
             {
                 if(released)
                 {
                     var text = o as string;
-                    
+
                     if(text != null)
                     {
                         switch(text) // analog inputs should send 0 when released to allow simplier PB scripts
@@ -1946,7 +1950,7 @@ namespace Digi.ControlModule
                                 continue;
                         }
                     }
-                    
+
                     continue; // released inputs should not be added printed
                 }
 
