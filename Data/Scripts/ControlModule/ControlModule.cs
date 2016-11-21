@@ -1441,52 +1441,64 @@ namespace Digi.ControlModule
                 foreach(var d in data)
                 {
                     var kv = d.Split(DATA_KEYVALUE_SEPARATOR);
+                    var key = kv[0].Trim();
+                    var value = kv[1].Trim();
 
-                    switch(kv[0])
+                    switch(key)
                     {
                         case "input":
-                            if(kv[1] != "none")
+                            if(value != "none")
                             {
-                                readAllInputs = (kv[1] == "all");
+                                readAllInputs = (value == "all");
 
                                 if(!readAllInputs)
-                                    input = ControlCombination.CreateFrom(kv[1]);
+                                    input = ControlCombination.CreateFrom(value);
                             }
                             break;
                         case "state":
-                            inputState = byte.Parse(kv[1]);
+                            inputState = byte.Parse(value);
                             break;
                         case "check":
-                            inputCheck = byte.Parse(kv[1]);
+                            inputCheck = byte.Parse(value);
                             break;
                         case "hold":
-                            holdDelayTrigger = Math.Round(double.Parse(kv[1]), 3);
+                            holdDelayTrigger = Math.Round(double.Parse(value), 3);
                             break;
                         case "repeat":
-                            repeatDelayTrigger = Math.Round(double.Parse(kv[1]), 3);
+                            repeatDelayTrigger = Math.Round(double.Parse(value), 3);
                             break;
                         case "release":
-                            releaseDelayTrigger = Math.Round(double.Parse(kv[1]), 3);
+                            releaseDelayTrigger = Math.Round(double.Parse(value), 3);
                             break;
                         case "filter":
                             str.Clear();
-                            str.Append(kv[1]);
+                            str.Append(value);
                             SetFilter(str);
                             break;
                         case "debug":
-                            debug = (kv[1] == "1");
+                            debug = (value == "1");
                             break;
                         case "run":
-                            runOnInput = (kv[1] == "1");
+                            runOnInput = (value == "1");
                             break;
                         default:
-                            Log.Error("Unknown key in name: '" + kv[0] + "', data raw: '" + block.CustomName + "'");
+                            Log.Error("Unknown key in name: '" + key + "', data raw: '" + block.CustomName + "'");
                             break;
                     }
                 }
 
                 if(debug)
                     debugName = GetNameNoData();
+
+                // HACK used to indicate if there are new lines in the name to sanitize it because PB has some issues with that
+                name = block.CustomName;
+                if(name.Contains('\n') || name.Contains('\r') || name.Contains('\t'))
+                {
+                    name = name.Replace('\n', ' ');
+                    name = name.Replace('\r', ' ');
+                    name = name.Replace('\t', ' ');
+                    block.SetCustomName(name);
+                }
             }
             catch(Exception e)
             {
@@ -1864,8 +1876,6 @@ namespace Digi.ControlModule
                 }
                 else // but clients do need to since PBs run server-side only
                 {
-                    // TODO optimize, use bytes as input index?
-
                     str.Clear();
                     str.Append(Entity.EntityId);
 
