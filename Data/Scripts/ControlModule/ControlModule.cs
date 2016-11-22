@@ -10,6 +10,7 @@ using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
+using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
@@ -177,26 +178,23 @@ namespace Digi.ControlModule
                 var c = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().pressedList;
                 tc.AddControl<TBlock>(c);
-                //redrawControls.Add(c);
             }
 
             {
                 var c = tc.CreateControl<IMyTerminalControlSeparator, TBlock>(string.Empty);
                 tc.AddControl<TBlock>(c);
-                //redrawControls.Add(c);
             }
 
-            {
-                var c = tc.CreateControl<IMyTerminalControlLabel, TBlock>(string.Empty);
-                c.Label = MyStringId.GetOrCompute("Control Module");
-                c.SupportsMultipleBlocks = true;
-                tc.AddControl<TBlock>(c);
-                //redrawControls.Add(c);
-            }
+            //{
+            //    var c = tc.CreateControl<IMyTerminalControlLabel, TBlock>(string.Empty);
+            //    c.Label = MyStringId.GetOrCompute("Control Module");
+            //    c.SupportsMultipleBlocks = true;
+            //    tc.AddControl<TBlock>(c);
+            //}
 
             {
                 var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
-                //c.Title = MyStringId.GetOrCompute("Add input");
+                c.Title = MyStringId.GetOrCompute("Control Module"); // acts as the section title, more compact than using a label
                 c.Tooltip = MyStringId.GetOrCompute("Click on an input from the list to add it to the inputs list below.");
                 c.SupportsMultipleBlocks = true;
                 c.ComboBoxContent = ControlModuleMod.InputsDDList;
@@ -392,7 +390,9 @@ namespace Digi.ControlModule
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
                 c.Title = MyStringId.GetOrCompute("Run on input");
                 c.Tooltip = MyStringId.GetOrCompute("Toggle if the PB is executed when inputs are registered.\n" +
-                                                    "This will allow you to update the internal Inputs dictionary without executing the PB.");
+                                                    "This will allow you to update the internal Inputs dictionary without executing the PB.\n" +
+                                                    "\n" +
+                                                    "The argument defined above is the one used when executing the PB.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RunOnInput = v;
@@ -1870,11 +1870,11 @@ namespace Digi.ControlModule
                 {
                     if(runOnInput)
                     {
-                        var pb = Entity as IMyProgrammableBlock;
-                        pb.ApplyAction("Run");
+                        var pb = (IMyProgrammableBlock)Entity;
+                        pb.TryRun(pb.TerminalRunArgument);
                     }
                 }
-                else // but clients do need to since PBs run server-side only
+                else // but clients do need to send'em since PBs run server-side only
                 {
                     str.Clear();
                     str.Append(Entity.EntityId);
