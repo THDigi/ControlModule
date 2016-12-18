@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
@@ -10,10 +9,8 @@ using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
-using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -1779,12 +1776,8 @@ namespace Digi.ControlModule
         {
             return (long)(TimeSpan.TicksPerMillisecond * (seconds * 1000));
         }
-
-#if STABLE // HACK >>> STABLE condition
-        private void DebugPrint(string message, int timeMs = 500, MyFontEnum font = MyFontEnum.White)
-#else
+        
         private void DebugPrint(string message, int timeMs = 500, string font = MyFontEnum.White)
-#endif
         {
             if(debug)
                 MyAPIGateway.Utilities.ShowNotification(debugName + ": " + message, timeMs, font);
