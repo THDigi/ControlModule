@@ -832,10 +832,10 @@ namespace Digi.ControlModule
     #endregion Control Module main
 
     #region Block script attachment
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_MyProgrammableBlock))]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_MyProgrammableBlock), useEntityUpdate: false)]
     public class ProgrammableBlock : ControlModule { }
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TimerBlock))]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TimerBlock), useEntityUpdate: false)]
     public class TimerBlock : ControlModule { }
 
     public class ControlModule : MyGameLogicComponent
@@ -886,17 +886,12 @@ namespace Digi.ControlModule
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-        }
-
-        public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false)
-        {
-            return Entity.GetObjectBuilder(copy);
+            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
         }
 
         public void FirstUpdate()
         {
-            var block = Entity as IMyTerminalBlock;
+            var block = (IMyTerminalBlock)Entity;
 
             // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
@@ -933,7 +928,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                var block = Entity as IMyTerminalBlock;
+                var block = (IMyTerminalBlock)Entity;
 
                 block.CustomNameChanged -= NameChanged;
             }
@@ -1494,7 +1489,7 @@ namespace Digi.ControlModule
                     name = name.Replace('\n', ' ');
                     name = name.Replace('\r', ' ');
                     name = name.Replace('\t', ' ');
-                    block.SetCustomName(name);
+                    block.CustomName = name;
                 }
             }
             catch(Exception e)
@@ -1535,7 +1530,7 @@ namespace Digi.ControlModule
         public void ResetNameAndSettings()
         {
             ResetSettings();
-            (Entity as IMyTerminalBlock).SetCustomName(GetNameNoData());
+            ((IMyTerminalBlock)Entity).CustomName = GetNameNoData();
             RefreshUI();
         }
 
@@ -1547,7 +1542,7 @@ namespace Digi.ControlModule
             if(AreSettingsDefault())
             {
                 if(block.CustomName.Length != trimmedName.Length)
-                    block.SetCustomName(trimmedName);
+                    block.CustomName = trimmedName;
 
                 return;
             }
@@ -1616,12 +1611,12 @@ namespace Digi.ControlModule
 
             str.Append(DATA_TAG_END);
 
-            block.SetCustomName(str.ToString());
+            block.CustomName = str.ToString();
         }
 
         private string GetNameNoData()
         {
-            var block = Entity as IMyTerminalBlock;
+            var block = (IMyTerminalBlock)Entity;
             var name = block.CustomName;
             var startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
 
@@ -1641,6 +1636,11 @@ namespace Digi.ControlModule
         {
             try
             {
+                var block = (IMyTerminalBlock)Entity;
+
+                if(block.CubeGrid.Physics == null)
+                    return;
+
                 if(first)
                 {
                     first = false;
@@ -1776,7 +1776,7 @@ namespace Digi.ControlModule
         {
             return (long)(TimeSpan.TicksPerMillisecond * (seconds * 1000));
         }
-        
+
         private void DebugPrint(string message, int timeMs = 500, string font = MyFontEnum.White)
         {
             if(debug)
