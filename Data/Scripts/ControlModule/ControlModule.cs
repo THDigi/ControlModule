@@ -29,23 +29,28 @@ namespace Digi.ControlModule
     {
         public override void LoadData()
         {
+            instance = this;
             Log.SetUp("Control Module", 655948251, "ControlModule");
         }
 
-        public static bool init { get; private set; }
-        public static bool showInputs = false;
+        public static ControlModuleMod instance = null;
 
-        public static List<IMyTerminalControl> redrawControlsTimer = null;
-        public static List<IMyTerminalControl> redrawControlsPB = null;
+        public bool init { get; private set; }
+        public bool showInputs = false;
 
-        public static readonly Encoding encode = Encoding.Unicode;
+        public readonly Dictionary<long, ControlModule> CMs = new Dictionary<long, ControlModule>(); // HACK workaround v1.185 PB gamelogic issues
+
+        public readonly List<IMyTerminalControl> redrawControlsTimer = new List<IMyTerminalControl>();
+        public readonly List<IMyTerminalControl> redrawControlsPB = new List<IMyTerminalControl>();
+
+        public readonly Encoding encode = Encoding.Unicode;
         public const ushort MSG_INPUTS = 33189;
         public const string ID_PREFIX = "ControlModule.";
         public const string UI_INPUTSLIST_ID = ID_PREFIX + "InputList";
         public const int MAX_INPUTLIST_LINES = 10;
 
         private const float EPSILON = 0.000001f;
-        private readonly static StringBuilder str = new StringBuilder();
+        public readonly StringBuilder str = new StringBuilder();
 
         public const string QUICK_INTRODUCTION_TEXT = "----- Control Module mod - quick introduction ------\n" +
             "This mod allows players to trigger timer and programmable blocks using keyboard,\n" +
@@ -98,10 +103,9 @@ namespace Digi.ControlModule
                 Log.Error(e);
             }
 
-            redrawControlsPB = null;
-            redrawControlsTimer = null;
-
             Log.Close();
+
+            instance = null;
         }
 
         public void ReceivedInputsPacket(byte[] bytes)
@@ -122,8 +126,8 @@ namespace Digi.ControlModule
 
                 if(pb == null)
                     return;
-
-                var logic = pb.GameLogic.GetAs<ControlModule>();
+                
+                var logic = ControlModuleMod.instance.CMs[pb.EntityId];
                 logic.pressedList.Clear();
 
                 if(data.Length > 1)
@@ -173,7 +177,7 @@ namespace Digi.ControlModule
             // the hidden inputs list property, accessible by PBs
             {
                 var c = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().pressedList;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].pressedList;
                 tc.AddControl<TBlock>(c);
             }
 
@@ -196,14 +200,14 @@ namespace Digi.ControlModule
                 c.SupportsMultipleBlocks = true;
                 c.ComboBoxContent = ControlModuleMod.InputsDDList;
                 c.Getter = (b) => 0;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput((int)v - 2);
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].AddInput((int)v - 2);
                 tc.AddControl<TBlock>(c);
                 //redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "AddInput");
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput(v);
+                    p.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].AddInput(v);
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -214,8 +218,8 @@ namespace Digi.ControlModule
                 //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored."); // disabled because it blocks individual list items' tooltips
                 c.SupportsMultipleBlocks = true;
                 c.Multiselect = true;
-                c.ListContent = (b, list, selected) => b.GameLogic.GetAs<ControlModule>().GetInputsList(list, selected);
-                c.ItemSelected = (b, selected) => b.GameLogic.GetAs<ControlModule>().SelectInputs(selected);
+                c.ListContent = (b, list, selected) => ControlModuleMod.instance.CMs[b.EntityId].GetInputsList(list, selected);
+                c.ItemSelected = (b, selected) => ControlModuleMod.instance.CMs[b.EntityId].SelectInputs(selected);
                 c.VisibleRowsCount = 6; // TODO << set to 1 once UpdateVisual() works with RedrawControl()
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
@@ -229,18 +233,18 @@ namespace Digi.ControlModule
                                                     "Select multiple items in the list using shift+click");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    var l = ControlModuleMod.instance.CMs[b.EntityId];
                     return (l.HasValidInput && l.selected != null && l.selected.Count > 0);
                 };
                 c.SupportsMultipleBlocks = true;
-                c.Action = (b) => b.GameLogic.GetAs<ControlModule>().RemoveSelected();
+                c.Action = (b) => ControlModuleMod.instance.CMs[b.EntityId].RemoveSelected();
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "RemoveInput");
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RemoveInput(v);
+                    p.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].RemoveInput(v);
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -253,21 +257,21 @@ namespace Digi.ControlModule
                                                     "Only relevant if you have more than one input.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    var l = ControlModuleMod.instance.CMs[b.EntityId];
                     return (l.input != null && l.input.combination.Count > 1);
                 };
                 c.SupportsMultipleBlocks = true;
                 c.ComboBoxContent = ControlModuleMod.InputCheckDDList;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().InputCheck;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputCheck = v;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].InputCheck;
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].InputCheck = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputCheck");
-                    p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputCheck;
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputCheck = v;
+                    p.Getter = (b) => (int)ControlModuleMod.instance.CMs[b.EntityId].InputCheck;
+                    p.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].InputCheck = v;
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -278,19 +282,19 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("The input states that will trigger this block.\n" +
                                                     "\n" +
                                                     "Analog inputs are read as pressed while the value is changing and when it stops changing it will be read as released.");
-                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.Enabled = (b) => ControlModuleMod.instance.CMs[b.EntityId].HasValidInput;
                 c.SupportsMultipleBlocks = true;
                 c.ComboBoxContent = ControlModuleMod.InputStateDDList;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().InputState;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputState = v;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].InputState;
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].InputState = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputState");
-                    p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputState;
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputState = v;
+                    p.Getter = (b) => (int)ControlModuleMod.instance.CMs[b.EntityId].InputState;
+                    p.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].InputState = v;
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -304,14 +308,14 @@ namespace Digi.ControlModule
                                                     "Requires a pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    var l = ControlModuleMod.instance.CMs[b.EntityId];
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
                 c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().HoldDelay = (v < 0.016f ? 0 : v);
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().HoldDelay;
-                c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().HoldDelay);
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].HoldDelay = (v < 0.016f ? 0 : v);
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].HoldDelay;
+                c.Writer = (b, s) => TerminalSliderFormat(b, s, ControlModuleMod.instance.CMs[b.EntityId].HoldDelay);
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -326,14 +330,14 @@ namespace Digi.ControlModule
                                                     "Requires the pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    var l = ControlModuleMod.instance.CMs[b.EntityId];
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
                 c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RepeatDelay = (v < 0.016f ? 0 : v);
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().RepeatDelay;
-                c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().RepeatDelay);
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].RepeatDelay = (v < 0.016f ? 0 : v);
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].RepeatDelay;
+                c.Writer = (b, s) => TerminalSliderFormat(b, s, ControlModuleMod.instance.CMs[b.EntityId].RepeatDelay);
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -348,14 +352,14 @@ namespace Digi.ControlModule
                                                     "Requires the released input state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    var l = ControlModuleMod.instance.CMs[b.EntityId];
                     return l.HasValidInput && l.inputState >= 1;
                 };
                 c.SupportsMultipleBlocks = true;
                 c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().ReleaseDelay = (v < 0.016f ? 0 : v);
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().ReleaseDelay;
-                c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().ReleaseDelay);
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].ReleaseDelay = (v < 0.016f ? 0 : v);
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].ReleaseDelay;
+                c.Writer = (b, s) => TerminalSliderFormat(b, s, ControlModuleMod.instance.CMs[b.EntityId].ReleaseDelay);
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -366,18 +370,18 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("Only allow cockpits, seats or RC blocks that have this text in the name will be allowed to control this block.\n" +
                                                     "Leave blank to allow any cockpit, seat or RC block to control this block. (within ownership limits).\n" +
                                                     "Text is case insensitive.");
-                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.Enabled = (b) => ControlModuleMod.instance.CMs[b.EntityId].HasValidInput;
                 c.SupportsMultipleBlocks = true;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().Filter;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = v;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].Filter;
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].Filter = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
-                    p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().filter;
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = str.Clear().Append(v);
+                    p.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].filter;
+                    p.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].Filter = instance.str.Clear().Append(v);
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -390,10 +394,10 @@ namespace Digi.ControlModule
                                                     "This will allow you to update the internal Inputs dictionary without executing the PB.\n" +
                                                     "\n" +
                                                     "The argument defined above is the one used when executing the PB.");
-                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.Enabled = (b) => ControlModuleMod.instance.CMs[b.EntityId].HasValidInput;
                 c.SupportsMultipleBlocks = true;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RunOnInput = v;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().RunOnInput;
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].RunOnInput = v;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].RunOnInput;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -403,10 +407,10 @@ namespace Digi.ControlModule
                 c.Title = MyStringId.GetOrCompute("Show behavior on HUD");
                 c.Tooltip = MyStringId.GetOrCompute("Show HUD messages to cockpit pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
                                                     "Useful for finding issues or understanding how the block will behave.");
-                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.Enabled = (b) => ControlModuleMod.instance.CMs[b.EntityId].HasValidInput;
                 c.SupportsMultipleBlocks = true;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().ShowDebug = v;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().ShowDebug;
+                c.Setter = (b, v) => ControlModuleMod.instance.CMs[b.EntityId].ShowDebug = v;
+                c.Getter = (b) => ControlModuleMod.instance.CMs[b.EntityId].ShowDebug;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -425,9 +429,9 @@ namespace Digi.ControlModule
                 var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(ID_PREFIX + "ClearSettings");
                 c.Title = MyStringId.GetOrCompute("Clear Settings");
                 c.Tooltip = MyStringId.GetOrCompute("Effectively resets all settings and clears the name.");
-                c.Enabled = (b) => !b.GameLogic.GetAs<ControlModule>().AreSettingsDefault();
+                c.Enabled = (b) => !ControlModuleMod.instance.CMs[b.EntityId].AreSettingsDefault();
                 c.SupportsMultipleBlocks = true;
-                c.Action = (b) => b.GameLogic.GetAs<ControlModule>().ResetNameAndSettings();
+                c.Action = (b) => ControlModuleMod.instance.CMs[b.EntityId].ResetNameAndSettings();
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
@@ -513,6 +517,8 @@ namespace Digi.ControlModule
                     Value = MyStringId.GetOrCompute("Special: read all inputs"),
                 });
 
+                var str = instance.str;
+
                 for(int i = 0; i < InputHandler.inputValuesList.Count; i++)
                 {
                     var val = InputHandler.inputValuesList[i];
@@ -570,6 +576,11 @@ namespace Digi.ControlModule
                         return;
 
                     Init();
+                }
+
+                foreach(var cm in CMs.Values)
+                {
+                    cm.UpdateBeforeSimulation();
                 }
 
                 if(showInputs)
@@ -871,9 +882,8 @@ namespace Digi.ControlModule
         public List<MyTerminalControlListBoxItem> selected = null;
 
         private static byte skipSpeedCounter = 30;
-        private static readonly StringBuilder str = new StringBuilder();
 
-        private static readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
+        private readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 
         private const string TIMESPAN_FORMAT = @"mm\:ss\.f";
 
@@ -886,7 +896,10 @@ namespace Digi.ControlModule
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
+            //NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
+
+            // HACK workaround for v1.185 PB gamelogic issues
+            MyAPIGateway.Utilities.InvokeOnGameThread(() => ControlModuleMod.instance.CMs.Add(Entity.EntityId, this));
         }
 
         public void FirstUpdate()
@@ -896,18 +909,16 @@ namespace Digi.ControlModule
             // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
             {
-                if(ControlModuleMod.redrawControlsTimer == null)
+                if(ControlModuleMod.instance.redrawControlsTimer.Count == 0)
                 {
-                    ControlModuleMod.redrawControlsTimer = new List<IMyTerminalControl>();
-                    ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.redrawControlsTimer);
+                    ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.instance.redrawControlsTimer);
                 }
             }
             else
             {
-                if(ControlModuleMod.redrawControlsPB == null)
+                if(ControlModuleMod.instance.redrawControlsPB.Count == 0)
                 {
-                    ControlModuleMod.redrawControlsPB = new List<IMyTerminalControl>();
-                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.redrawControlsPB);
+                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.instance.redrawControlsPB);
                 }
             }
 
@@ -931,6 +942,9 @@ namespace Digi.ControlModule
                 var block = (IMyTerminalBlock)Entity;
 
                 block.CustomNameChanged -= NameChanged;
+
+                // HACK workaround...
+                ControlModuleMod.instance.CMs.Remove(Entity.EntityId);
             }
             catch(Exception e)
             {
@@ -1203,9 +1217,9 @@ namespace Digi.ControlModule
                 List<IMyTerminalControl> controls;
 
                 if(Entity is IMyTimerBlock)
-                    controls = ControlModuleMod.redrawControlsTimer;
+                    controls = ControlModuleMod.instance.redrawControlsTimer;
                 else
-                    controls = ControlModuleMod.redrawControlsPB;
+                    controls = ControlModuleMod.instance.redrawControlsPB;
 
                 foreach(var c in controls)
                 {
@@ -1257,6 +1271,8 @@ namespace Digi.ControlModule
                 else if(input != null)
                 {
                     var assigned = new List<string>();
+
+                    var str = ControlModuleMod.instance.str;
 
                     foreach(var obj in input.combination)
                     {
@@ -1429,6 +1445,7 @@ namespace Digi.ControlModule
                     return;
 
                 var data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR);
+                var str = ControlModuleMod.instance.str;
 
                 foreach(var d in data)
                 {
@@ -1547,6 +1564,7 @@ namespace Digi.ControlModule
                 return;
             }
 
+            var str = ControlModuleMod.instance.str;
             str.Clear();
             str.Append(trimmedName);
             str.Append(' ', 3);
@@ -1869,6 +1887,7 @@ namespace Digi.ControlModule
                 }
                 else // but clients do need to send'em since PBs run server-side only
                 {
+                    var str = ControlModuleMod.instance.str;
                     str.Clear();
                     str.Append(Entity.EntityId);
 
@@ -1903,7 +1922,7 @@ namespace Digi.ControlModule
                         }
                     }
 
-                    var bytes = ControlModuleMod.encode.GetBytes(str.ToString());
+                    var bytes = ControlModuleMod.instance.encode.GetBytes(str.ToString());
 
                     if(bytes.Length > 4096)
                     {
