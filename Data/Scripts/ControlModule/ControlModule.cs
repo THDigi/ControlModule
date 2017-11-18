@@ -126,7 +126,7 @@ namespace Digi.ControlModule
 
                 if(pb == null)
                     return;
-                
+
                 var logic = ControlModuleMod.instance.CMs[pb.EntityId];
                 logic.pressedList.Clear();
 
@@ -862,6 +862,7 @@ namespace Digi.ControlModule
         public bool debug = false;
         public bool runOnInput = true;
 
+        private IMyTerminalBlock block;
         private bool first = true;
         private long lastTrigger = 0;
         private bool lastPressed = false;
@@ -898,14 +899,12 @@ namespace Digi.ControlModule
         {
             //NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
 
-            // HACK workaround for v1.185 PB gamelogic issues
-            MyAPIGateway.Utilities.InvokeOnGameThread(() => ControlModuleMod.instance.CMs.Add(Entity.EntityId, this));
+            block = (IMyTerminalBlock)Entity; // HACK required to avoid Entity being null if this is the only component on the PB
+            MyAPIGateway.Utilities.InvokeOnGameThread(() => ControlModuleMod.instance.CMs.Add(block.EntityId, this)); // HACK workaround for v1.185 PB gamelogic issues
         }
 
         public void FirstUpdate()
         {
-            var block = (IMyTerminalBlock)Entity;
-
             // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
             {
@@ -939,12 +938,10 @@ namespace Digi.ControlModule
         {
             try
             {
-                var block = (IMyTerminalBlock)Entity;
-
                 block.CustomNameChanged -= NameChanged;
 
                 // HACK workaround...
-                ControlModuleMod.instance.CMs.Remove(Entity.EntityId);
+                ControlModuleMod.instance.CMs.Remove(block.EntityId);
             }
             catch(Exception e)
             {
@@ -1216,7 +1213,7 @@ namespace Digi.ControlModule
             {
                 List<IMyTerminalControl> controls;
 
-                if(Entity is IMyTimerBlock)
+                if(block is IMyTimerBlock)
                     controls = ControlModuleMod.instance.redrawControlsTimer;
                 else
                     controls = ControlModuleMod.instance.redrawControlsPB;
@@ -1547,13 +1544,12 @@ namespace Digi.ControlModule
         public void ResetNameAndSettings()
         {
             ResetSettings();
-            ((IMyTerminalBlock)Entity).CustomName = GetNameNoData();
+            block.CustomName = GetNameNoData();
             RefreshUI();
         }
 
         private void SaveToName(string forceName = null)
         {
-            var block = Entity as IMyTerminalBlock;
             var trimmedName = (forceName ?? GetNameNoData());
 
             if(AreSettingsDefault())
@@ -1634,7 +1630,6 @@ namespace Digi.ControlModule
 
         private string GetNameNoData()
         {
-            var block = (IMyTerminalBlock)Entity;
             var name = block.CustomName;
             var startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
 
@@ -1654,8 +1649,6 @@ namespace Digi.ControlModule
         {
             try
             {
-                var block = (IMyTerminalBlock)Entity;
-
                 if(block.CubeGrid.Physics == null)
                     return;
 
@@ -1816,9 +1809,7 @@ namespace Digi.ControlModule
 
                 return false;
             }
-
-            var block = Entity as IMyTerminalBlock;
-
+            
             if(block == null || !block.IsWorking)
                 return false;
 
@@ -1867,7 +1858,7 @@ namespace Digi.ControlModule
 
         private void Trigger(bool released = false)
         {
-            var timer = Entity as IMyTimerBlock;
+            var timer = block as IMyTimerBlock;
 
             if(timer != null)
             {
@@ -1881,7 +1872,7 @@ namespace Digi.ControlModule
                 {
                     if(runOnInput)
                     {
-                        var pb = (IMyProgrammableBlock)Entity;
+                        var pb = (IMyProgrammableBlock)block;
                         pb.TryRun(pb.TerminalRunArgument);
                     }
                 }
@@ -1889,7 +1880,7 @@ namespace Digi.ControlModule
                 {
                     var str = ControlModuleMod.instance.str;
                     str.Clear();
-                    str.Append(Entity.EntityId);
+                    str.Append(block.EntityId);
 
                     foreach(var kv in pressedList)
                     {
