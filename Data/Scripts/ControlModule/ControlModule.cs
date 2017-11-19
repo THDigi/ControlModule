@@ -39,6 +39,7 @@ namespace Digi.ControlModule
         public bool showInputs = false;
 
         public readonly Dictionary<long, ControlModule> CMs = new Dictionary<long, ControlModule>(); // HACK workaround v1.185 PB gamelogic issues
+        private readonly HashSet<long> removeCMs = new HashSet<long>();
 
         public readonly List<IMyTerminalControl> redrawControlsTimer = new List<IMyTerminalControl>();
         public readonly List<IMyTerminalControl> redrawControlsPB = new List<IMyTerminalControl>();
@@ -578,9 +579,26 @@ namespace Digi.ControlModule
                     Init();
                 }
 
-                foreach(var cm in CMs.Values)
+                // HACK update CMs here...
+                foreach(var kv in CMs)
                 {
-                    cm.UpdateBeforeSimulation();
+                    var logic = kv.Value;
+
+                    if(logic.block.Closed)
+                    {
+                        removeCMs.Add(kv.Key);
+                        continue;
+                    }
+
+                    logic.UpdateBeforeSimulation();
+                }
+
+                if(removeCMs.Count > 0)
+                {
+                    foreach(var key in removeCMs)
+                        CMs.Remove(key);
+
+                    removeCMs.Clear();
                 }
 
                 if(showInputs)
@@ -851,6 +869,7 @@ namespace Digi.ControlModule
 
     public class ControlModule : MyGameLogicComponent
     {
+        public IMyTerminalBlock block;
         public ControlCombination input = null;
         public bool readAllInputs = false;
         public string filter = null;
@@ -862,7 +881,6 @@ namespace Digi.ControlModule
         public bool debug = false;
         public bool runOnInput = true;
 
-        private IMyTerminalBlock block;
         private bool first = true;
         private long lastTrigger = 0;
         private bool lastPressed = false;
@@ -900,7 +918,7 @@ namespace Digi.ControlModule
             //NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
 
             block = (IMyTerminalBlock)Entity; // HACK required to avoid Entity being null if this is the only component on the PB
-            MyAPIGateway.Utilities.InvokeOnGameThread(() => ControlModuleMod.instance.CMs.Add(block.EntityId, this)); // HACK workaround for v1.185 PB gamelogic issues
+            MyAPIGateway.Utilities.InvokeOnGameThread(() => ControlModuleMod.instance.CMs[block.EntityId] = this); // HACK workaround for v1.185 PB gamelogic issues
         }
 
         public void FirstUpdate()
@@ -939,9 +957,6 @@ namespace Digi.ControlModule
             try
             {
                 block.CustomNameChanged -= NameChanged;
-
-                // HACK workaround...
-                ControlModuleMod.instance.CMs.Remove(block.EntityId);
             }
             catch(Exception e)
             {
@@ -1809,7 +1824,7 @@ namespace Digi.ControlModule
 
                 return false;
             }
-            
+
             if(block == null || !block.IsWorking)
                 return false;
 
