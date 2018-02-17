@@ -409,12 +409,26 @@ namespace Digi.ControlModule
             {
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "Debug");
                 c.Title = MyStringId.GetOrCompute("Show behavior on HUD");
-                c.Tooltip = MyStringId.GetOrCompute("Show HUD messages to cockpit pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
+                c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" + 
+                                                    "Show HUD messages to cockpit pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
                                                     "Useful for finding issues or understanding how the block will behave.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().ShowDebug = v;
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().ShowDebug;
+                tc.AddControl<TBlock>(c);
+                redrawControls.Add(c);
+            }
+            
+            {
+                var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "MonitorInMenus");
+                c.Title = MyStringId.GetOrCompute("Monitor inputs in menus");
+                c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" +
+                                                    "If enabled, pressing the monitored inputs will also work while you're in any menu, except chat.");
+                c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
+                c.SupportsMultipleBlocks = true;
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().MonitorInMenus = v;
+                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().MonitorInMenus;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }

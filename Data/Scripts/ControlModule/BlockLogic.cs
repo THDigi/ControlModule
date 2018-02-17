@@ -37,6 +37,7 @@ namespace Digi.ControlModule
         public double releaseDelayTrigger = 0;
         public double holdDelayTrigger = 0;
         public bool debug = false;
+        public bool monitorInMenus = false;
         public bool runOnInput = true;
 
         private bool first = true;
@@ -219,6 +220,18 @@ namespace Digi.ControlModule
             set
             {
                 debug = value;
+
+                if(propertiesChanged == 0)
+                    propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            }
+        }
+
+        public bool MonitorInMenus
+        {
+            get { return monitorInMenus; }
+            set
+            {
+                monitorInMenus = value;
 
                 if(propertiesChanged == 0)
                     propertiesChanged = PROPERTIES_CHANGED_TICKS;
@@ -655,6 +668,9 @@ namespace Digi.ControlModule
                         case "debug":
                             debug = (value == "1");
                             break;
+                        case "monitorinmenus":
+                            monitorInMenus = (value == "1");
+                            break;
                         case "run":
                             runOnInput = (value == "1");
                             break;
@@ -694,6 +710,7 @@ namespace Digi.ControlModule
                      || releaseDelayTrigger > 0.016
                      || filter != null
                      || debug
+                     || monitorInMenus
                      || !runOnInput);
         }
 
@@ -709,6 +726,7 @@ namespace Digi.ControlModule
             holdDelayTrigger = 0;
             runOnInput = true;
             debug = false;
+            monitorInMenus = false;
             debugName = null;
         }
 
@@ -782,6 +800,12 @@ namespace Digi.ControlModule
             if(debug)
             {
                 str.Append("debug").Append(DATA_KEYVALUE_SEPARATOR).Append("1");
+                str.Append(DATA_SEPARATOR);
+            }
+
+            if(monitorInMenus)
+            {
+                str.Append("monitorinmenus").Append(DATA_KEYVALUE_SEPARATOR).Append("1");
                 str.Append(DATA_SEPARATOR);
             }
 
@@ -1018,7 +1042,10 @@ namespace Digi.ControlModule
 
         private bool IsPressed()
         {
-            if(!InputHandler.IsInputReadable()) // input ready to be monitored
+            if(MyAPIGateway.Gui.ChatEntryVisible)
+                return false; // ignore chat regardless of monitorInMenus
+
+            if(!monitorInMenus && MyAPIGateway.Gui.IsCursorVisible)
                 return false;
 
             return InputHandler.GetPressed((readAllInputs ? InputHandler.inputValuesList : input.combination),
