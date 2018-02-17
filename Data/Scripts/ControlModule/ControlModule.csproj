@@ -119,7 +119,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ControlModule.cs" />
+    <Compile Include="BlockLogic.cs" />
+    <Compile Include="ControlModuleMod.cs" />
     <Compile Include="InputHandler.cs" />
     <Compile Include="Log.cs" />
   </ItemGroup>
