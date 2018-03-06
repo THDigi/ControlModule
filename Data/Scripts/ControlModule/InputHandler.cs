@@ -123,7 +123,6 @@ namespace Digi
         public static Dictionary<object, string> inputNames = null;
         public static Dictionary<string, string> inputNiceNames = null;
         public static List<object> inputValuesList = null;
-        public static List<string> inputAnalogList = null;
         public static Dictionary<MyStringId, object> gamepadBindings = null;
         public static Dictionary<object, char> xboxCodes = null;
         public const string MOUSE_PREFIX = "m.";
@@ -395,19 +394,6 @@ namespace Digi
                 //{CONTROL_PREFIX+"movefurther", MyControlsSpace.MOVE_FURTHER},
                 //{CONTROL_PREFIX+"primarybuildaction", MyControlsSpace.PRIMARY_BUILD_ACTION}, // doesn't seem to be usable
                 //{CONTROL_PREFIX+"secondarybuildaction", MyControlsSpace.SECONDARY_BUILD_ACTION},
-            };
-
-            inputAnalogList = new List<string>()
-            {
-                {MOUSE_PREFIX+"analog"},
-                {MOUSE_PREFIX+"x"},
-                {MOUSE_PREFIX+"y"},
-                {MOUSE_PREFIX+"scroll"},
-
-                {GAMEPAD_PREFIX+"lsanalog"},
-                {GAMEPAD_PREFIX+"rsanalog"},
-                {GAMEPAD_PREFIX+"ltanalog"},
-                {GAMEPAD_PREFIX+"rtanalog"},
             };
 
             inputNames = new Dictionary<object, string>();
@@ -870,7 +856,7 @@ namespace Digi
             if(gamepadBindings.ContainsKey(control))
             {
                 var obj = gamepadBindings[control];
-                
+
                 if(obj is MyJoystickButtonsEnum)
                 {
                     return (newPress ? MyAPIGateway.Input.IsJoystickButtonNewPressed((MyJoystickButtonsEnum)obj) : MyAPIGateway.Input.IsJoystickButtonPressed((MyJoystickButtonsEnum)obj));

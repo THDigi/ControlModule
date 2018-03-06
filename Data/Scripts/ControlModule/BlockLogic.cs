@@ -11,6 +11,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;

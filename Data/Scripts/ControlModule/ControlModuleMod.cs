@@ -36,7 +36,7 @@ namespace Digi.ControlModule
 
         public bool init { get; private set; }
         public bool showInputs = false;
-        
+
         public readonly List<IMyTerminalControl> redrawControlsTimer = new List<IMyTerminalControl>();
         public readonly List<IMyTerminalControl> redrawControlsPB = new List<IMyTerminalControl>();
 
@@ -419,7 +419,7 @@ namespace Digi.ControlModule
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
             }
-            
+
             {
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "MonitorInMenus");
                 c.Title = MyStringId.GetOrCompute("Monitor inputs in menus");
@@ -595,7 +595,7 @@ namespace Digi.ControlModule
 
                     Init();
                 }
-                
+
                 if(showInputs)
                 {
                     const char separator = ' ';
@@ -752,10 +752,10 @@ namespace Digi.ControlModule
                         }
                     }
 
-                    MyAPIGateway.Utilities.ShowNotification(keys.ToString(), 17, MyFontEnum.White);
-                    MyAPIGateway.Utilities.ShowNotification(mouse.ToString(), 17, MyFontEnum.White);
-                    MyAPIGateway.Utilities.ShowNotification(gamepad != null ? gamepad.ToString() : "Gamepad: (not connected or not enabled)", 17, MyFontEnum.White);
-                    MyAPIGateway.Utilities.ShowNotification(controls.ToString(), 17, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification(keys.ToString(), 16, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification(mouse.ToString(), 16, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification(gamepad != null ? gamepad.ToString() : "Gamepad: (not connected or not enabled)", 16, MyFontEnum.White);
+                    MyAPIGateway.Utilities.ShowNotification(controls.ToString(), 16, MyFontEnum.White);
                 }
             }
             catch(Exception e)
