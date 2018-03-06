@@ -302,6 +302,12 @@ namespace Digi
                 {GAMEPAD_PREFIX+"slider1-", MyJoystickAxesEnum.Slider1neg},
                 {GAMEPAD_PREFIX+"slider2+", MyJoystickAxesEnum.Slider2pos},
                 {GAMEPAD_PREFIX+"slider2-", MyJoystickAxesEnum.Slider2neg},
+                {GAMEPAD_PREFIX+"rotz+analog", GAMEPAD_PREFIX+"rotz+analog"},
+                {GAMEPAD_PREFIX+"rotz-analog", GAMEPAD_PREFIX+"rotz-analog"},
+                {GAMEPAD_PREFIX+"slider1+analog", GAMEPAD_PREFIX+"slider1+analog"},
+                {GAMEPAD_PREFIX+"slider1-analog", GAMEPAD_PREFIX+"slider1-analog"},
+                {GAMEPAD_PREFIX+"slider2+analog", GAMEPAD_PREFIX+"slider2+analog"},
+                {GAMEPAD_PREFIX+"slider2-analog", GAMEPAD_PREFIX+"slider2-analog"},
                 
                 // game controls
                 {CONTROL_PREFIX+"view", CONTROL_PREFIX+"view"},
@@ -742,6 +748,48 @@ namespace Digi
                             if(any == (Math.Abs(MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg)) > EPSILON))
                                 return any;
                             break;
+                        case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
+                        case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
+                            {
+                                var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
+                                if(any == (Math.Abs(v) > EPSILON))
+                                    return any;
+                                break;
+                            }
                         case InputHandler.MOUSE_PREFIX + "scrollup":
                             if(any == MyAPIGateway.Input.DeltaMouseScrollWheelValue() > 0)
                                 return any;

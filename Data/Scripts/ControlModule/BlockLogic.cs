@@ -1142,7 +1142,7 @@ namespace Digi.ControlModule
 
                     if(text != null)
                     {
-                        switch(text) // analog inputs should send 0 when released to allow simplier PB scripts
+                        switch(text) // analog inputs should send 0 when released to allow simpler PB scripts
                         {
                             case InputHandler.CONTROL_PREFIX + "view":
                             case InputHandler.CONTROL_PREFIX + "movement":
@@ -1158,7 +1158,13 @@ namespace Digi.ControlModule
                             case InputHandler.MOUSE_PREFIX + "scroll":
                             case InputHandler.GAMEPAD_PREFIX + "ltanalog":
                             case InputHandler.GAMEPAD_PREFIX + "rtanalog":
-                                pressedList.Add(text, (float)0f); // just making sure the data type stays correct
+                            case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
+                            case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
+                            case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
+                            case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
+                            case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
+                            case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
+                                pressedList.Add(text, (float)0f);
                                 continue;
                         }
                     }
@@ -1229,6 +1235,24 @@ namespace Digi.ControlModule
                             continue;
                         case InputHandler.GAMEPAD_PREFIX + "rtanalog":
                             pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos));
+                            continue;
+                        case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
+                            pressedList.Add(text, (float)MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg));
                             continue;
 
                         // but digital ones have no value and should only be added if non-zero
