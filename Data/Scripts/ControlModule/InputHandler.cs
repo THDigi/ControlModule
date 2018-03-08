@@ -298,14 +298,14 @@ namespace Digi
                 {GAMEPAD_PREFIX+"j16", MyJoystickButtonsEnum.J16},
                 {GAMEPAD_PREFIX+"rotz+", MyJoystickAxesEnum.RotationZpos},
                 {GAMEPAD_PREFIX+"rotz-", MyJoystickAxesEnum.RotationZneg},
-                {GAMEPAD_PREFIX+"slider1+", MyJoystickAxesEnum.Slider1pos},
-                {GAMEPAD_PREFIX+"slider1-", MyJoystickAxesEnum.Slider1neg},
-                {GAMEPAD_PREFIX+"slider2+", MyJoystickAxesEnum.Slider2pos},
-                {GAMEPAD_PREFIX+"slider2-", MyJoystickAxesEnum.Slider2neg},
                 {GAMEPAD_PREFIX+"rotz+analog", GAMEPAD_PREFIX+"rotz+analog"},
                 {GAMEPAD_PREFIX+"rotz-analog", GAMEPAD_PREFIX+"rotz-analog"},
+                {GAMEPAD_PREFIX+"slider1+", MyJoystickAxesEnum.Slider1pos},
+                {GAMEPAD_PREFIX+"slider1-", MyJoystickAxesEnum.Slider1neg},
                 {GAMEPAD_PREFIX+"slider1+analog", GAMEPAD_PREFIX+"slider1+analog"},
                 {GAMEPAD_PREFIX+"slider1-analog", GAMEPAD_PREFIX+"slider1-analog"},
+                {GAMEPAD_PREFIX+"slider2+", MyJoystickAxesEnum.Slider2pos},
+                {GAMEPAD_PREFIX+"slider2-", MyJoystickAxesEnum.Slider2neg},
                 {GAMEPAD_PREFIX+"slider2+analog", GAMEPAD_PREFIX+"slider2+analog"},
                 {GAMEPAD_PREFIX+"slider2-analog", GAMEPAD_PREFIX+"slider2-analog"},
                 
@@ -497,6 +497,18 @@ namespace Digi
             inputNiceNames[GAMEPAD_PREFIX + "rsdown"] = "Right Stick Down";
             inputNiceNames[GAMEPAD_PREFIX + "rsleft"] = "Right Stick Left";
             inputNiceNames[GAMEPAD_PREFIX + "rsright"] = "Right Stick Right";
+            inputNiceNames[GAMEPAD_PREFIX + "rotz+"] = "Rotation Z+";
+            inputNiceNames[GAMEPAD_PREFIX + "rotz-"] = "Rotation Z-";
+            inputNiceNames[GAMEPAD_PREFIX + "rotz+analog"] = "Rotation Z+ (analog)";
+            inputNiceNames[GAMEPAD_PREFIX + "rotz-analog"] = "Rotation Z- (analog)";
+            inputNiceNames[GAMEPAD_PREFIX + "slider1+"] = "Slider1+";
+            inputNiceNames[GAMEPAD_PREFIX + "slider1-"] = "Slider1-";
+            inputNiceNames[GAMEPAD_PREFIX + "slider1+analog"] = "Slider1+ (analog)";
+            inputNiceNames[GAMEPAD_PREFIX + "slider1-analog"] = "Slider1- (analog)";
+            inputNiceNames[GAMEPAD_PREFIX + "slider2+"] = "Slider2+";
+            inputNiceNames[GAMEPAD_PREFIX + "slider2-"] = "Slider2-";
+            inputNiceNames[GAMEPAD_PREFIX + "slider2+analog"] = "Slider2+ (analog)";
+            inputNiceNames[GAMEPAD_PREFIX + "slider2-analog"] = "Slider2- (analog)";
 
             inputNiceNames[CONTROL_PREFIX + "view"] = "View (analog)";
             inputNiceNames[CONTROL_PREFIX + "movement"] = "Movement (analog)";
