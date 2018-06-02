@@ -388,6 +388,9 @@ namespace Digi.ControlModule
         {
             try
             {
+                if(MyAPIGateway.Gui.GetCurrentScreen != MyTerminalPageEnum.ControlPanel || !ControlModuleMod.Instance.CMTerminalOpen)
+                    return; // only refresh if we're looking at the controls
+
                 List<IMyTerminalControl> controls;
 
                 if(block is IMyTimerBlock)

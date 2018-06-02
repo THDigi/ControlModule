@@ -37,6 +37,7 @@ namespace Digi.ControlModule
         private bool init;
         private bool showInputs = false;
 
+        public bool CMTerminalOpen = false; // used to know if the last viewed block in terminal was a control module; NOTE: doesn't get set to false when terminal is closed
 
         public readonly List<IMyTerminalControl> RedrawControlsTimer = new List<IMyTerminalControl>();
         public readonly List<IMyTerminalControl> RedrawControlsPB = new List<IMyTerminalControl>();
@@ -69,8 +70,7 @@ namespace Digi.ControlModule
 
             MyAPIGateway.Utilities.MessageEntered += MessageEntered;
 
-            // TODO << use when RedrawControl() and UpdateVisual() work together
-            //MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
+            MyAPIGateway.TerminalControls.CustomControlGetter += CustomControlGetter;
 
             if(MyAPIGateway.Multiplayer.IsServer)
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(MSG_INPUTS, ReceivedInputsPacket);
@@ -86,8 +86,7 @@ namespace Digi.ControlModule
 
                     MyAPIGateway.Utilities.MessageEntered -= MessageEntered;
 
-                    // TODO << use when RedrawControl() and UpdateVisual() work together
-                    //MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControlGetter;
+                    MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControlGetter;
 
                     if(MyAPIGateway.Multiplayer.IsServer)
                         MyAPIGateway.Multiplayer.UnregisterMessageHandler(MSG_INPUTS, ReceivedInputsPacket);
@@ -556,30 +555,32 @@ namespace Digi.ControlModule
             }
         }
 
-        // TODO << use when RedrawControl() and UpdateVisual() work together
-        //public void CustomControlGetter(IMyTerminalBlock block, List<IMyTerminalControl> controls)
-        //{
-        //    try
-        //    {
-        //        if(block is IMyProgrammableBlock || block is IMyTimerBlock)
-        //        {
-        //            var l = block.GameLogic.GetAs<ControlModule>();
-        //
-        //            foreach(var c in controls)
-        //            {
-        //                if(c.Id == UI_INPUTSLIST_ID)
-        //                {
-        //                    l.UpdateInputListUI(c);
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    catch(Exception e)
-        //    {
-        //        Log.Error(e);
-        //    }
-        //}
+        public void CustomControlGetter(IMyTerminalBlock block, List<IMyTerminalControl> controls)
+        {
+            try
+            {
+                var logic = block.GameLogic.GetAs<ControlModule>();
+
+                CMTerminalOpen = (logic != null);
+
+                // TODO << use when RedrawControl() and UpdateVisual() work together
+                //if(logic != null)
+                //{
+                //    foreach(var c in controls)
+                //    {
+                //        if(c.Id == UI_INPUTSLIST_ID)
+                //        {
+                //            logic.UpdateInputListUI(c);
+                //            break;
+                //        }
+                //    }
+                //}
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+        }
 
         public override void UpdateBeforeSimulation()
         {
