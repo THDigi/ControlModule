@@ -28,19 +28,20 @@ namespace Digi.ControlModule
     {
         public override void LoadData()
         {
-            instance = this;
+            Instance = this;
             Log.SetUp("Control Module", 655948251, "ControlModule");
         }
 
-        public static ControlModuleMod instance = null;
+        public static ControlModuleMod Instance = null;
 
-        public bool init { get; private set; }
-        public bool showInputs = false;
+        private bool init;
+        private bool showInputs = false;
 
-        public readonly List<IMyTerminalControl> redrawControlsTimer = new List<IMyTerminalControl>();
-        public readonly List<IMyTerminalControl> redrawControlsPB = new List<IMyTerminalControl>();
 
-        public readonly Encoding encode = Encoding.Unicode;
+        public readonly List<IMyTerminalControl> RedrawControlsTimer = new List<IMyTerminalControl>();
+        public readonly List<IMyTerminalControl> RedrawControlsPB = new List<IMyTerminalControl>();
+
+        public readonly Encoding Encode = Encoding.Unicode;
         public const ushort MSG_INPUTS = 33189;
         public const string ID_PREFIX = "ControlModule.";
         public const string UI_INPUTSLIST_ID = ID_PREFIX + "InputList";
@@ -64,7 +65,6 @@ namespace Digi.ControlModule
         public void Init()
         {
             Log.Init();
-            Log.Info("Initialized.");
             init = true;
 
             MyAPIGateway.Utilities.MessageEntered += MessageEntered;
@@ -91,8 +91,6 @@ namespace Digi.ControlModule
 
                     if(MyAPIGateway.Multiplayer.IsServer)
                         MyAPIGateway.Multiplayer.UnregisterMessageHandler(MSG_INPUTS, ReceivedInputsPacket);
-
-                    Log.Info("Mod unloaded.");
                 }
             }
             catch(Exception e)
@@ -100,16 +98,15 @@ namespace Digi.ControlModule
                 Log.Error(e);
             }
 
+            Instance = null;
             Log.Close();
-
-            instance = null;
         }
 
         public void ReceivedInputsPacket(byte[] bytes)
         {
             try
             {
-                string[] data = encode.GetString(bytes).Split(ControlModule.DATA_SEPARATOR);
+                string[] data = Encode.GetString(bytes).Split(ControlModule.DATA_SEPARATOR);
 
                 if(data.Length == 0)
                     return;
@@ -385,7 +382,7 @@ namespace Digi.ControlModule
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
                     p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().filter;
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = instance.str.Clear().Append(v);
+                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = new StringBuilder(v);
                     tc.AddControl<TBlock>(p);
                 }
             }
@@ -535,7 +532,7 @@ namespace Digi.ControlModule
                     Value = MyStringId.GetOrCompute("Special: read all inputs"),
                 });
 
-                var str = instance.str;
+                var str = Instance.str;
 
                 for(int i = 0; i < InputHandler.inputValuesList.Count; i++)
                 {

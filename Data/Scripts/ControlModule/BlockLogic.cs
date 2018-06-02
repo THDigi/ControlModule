@@ -49,7 +49,6 @@ namespace Digi.ControlModule
         private bool lastGridCheck = false;
         private bool lastNameCheck = false;
         private byte skipNameCheck = byte.MaxValue - 5;
-        private byte skipSpeed = 30;
         private byte propertiesChanged = 0;
         private string debugName = null;
 
@@ -59,8 +58,6 @@ namespace Digi.ControlModule
 
         public Dictionary<string, object> pressedList = new Dictionary<string, object>();
         public List<MyTerminalControlListBoxItem> selected = null;
-
-        private static byte skipSpeedCounter = 30;
 
         private readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 
@@ -84,26 +81,21 @@ namespace Digi.ControlModule
             // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
             {
-                if(ControlModuleMod.instance.redrawControlsTimer.Count == 0)
+                if(ControlModuleMod.Instance.RedrawControlsTimer.Count == 0)
                 {
-                    ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.instance.redrawControlsTimer);
+                    ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
                 }
             }
             else
             {
-                if(ControlModuleMod.instance.redrawControlsPB.Count == 0)
+                if(ControlModuleMod.Instance.RedrawControlsPB.Count == 0)
                 {
-                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.instance.redrawControlsPB);
+                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
                 }
             }
 
             block.CustomNameChanged += NameChanged;
             NameChanged(block);
-
-            if(++skipSpeedCounter > 60)
-                skipSpeedCounter = 30;
-
-            skipSpeed = skipSpeedCounter;
 
             // if it has inputs and is PB, fill in the pressedList dictionary ASAP, fixes PB getting dictionary exceptions on load
             if(MyAPIGateway.Multiplayer.IsServer && block is IMyProgrammableBlock && (readAllInputs || input != null))
@@ -399,9 +391,9 @@ namespace Digi.ControlModule
                 List<IMyTerminalControl> controls;
 
                 if(block is IMyTimerBlock)
-                    controls = ControlModuleMod.instance.redrawControlsTimer;
+                    controls = ControlModuleMod.Instance.RedrawControlsTimer;
                 else
-                    controls = ControlModuleMod.instance.redrawControlsPB;
+                    controls = ControlModuleMod.Instance.RedrawControlsPB;
 
                 foreach(var c in controls)
                 {
@@ -454,7 +446,7 @@ namespace Digi.ControlModule
                 {
                     var assigned = new List<string>();
 
-                    var str = ControlModuleMod.instance.str;
+                    var str = ControlModuleMod.Instance.str;
 
                     foreach(var obj in input.combination)
                     {
@@ -627,7 +619,7 @@ namespace Digi.ControlModule
                     return;
 
                 var data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR);
-                var str = ControlModuleMod.instance.str;
+                var str = ControlModuleMod.Instance.str;
 
                 foreach(var d in data)
                 {
@@ -750,7 +742,7 @@ namespace Digi.ControlModule
                 return;
             }
 
-            var str = ControlModuleMod.instance.str;
+            var str = ControlModuleMod.Instance.str;
             str.Clear();
             str.Append(trimmedName);
             str.Append(' ', 3);
@@ -1077,7 +1069,7 @@ namespace Digi.ControlModule
                 }
                 else // but clients do need to send'em since PBs run server-side only
                 {
-                    var str = ControlModuleMod.instance.str;
+                    var str = ControlModuleMod.Instance.str;
                     str.Clear();
                     str.Append(block.EntityId);
 
@@ -1112,7 +1104,7 @@ namespace Digi.ControlModule
                         }
                     }
 
-                    var bytes = ControlModuleMod.instance.encode.GetBytes(str.ToString());
+                    var bytes = ControlModuleMod.Instance.Encode.GetBytes(str.ToString());
 
                     if(bytes.Length > 4096)
                     {
