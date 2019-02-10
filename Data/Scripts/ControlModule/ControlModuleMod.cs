@@ -161,7 +161,7 @@ namespace Digi.ControlModule
 
                 if(logic.runOnInput)
                 {
-                    pb.ApplyAction("Run");
+                    pb.Run();
                 }
             }
             catch(Exception e)

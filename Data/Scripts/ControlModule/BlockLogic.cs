@@ -1056,7 +1056,7 @@ namespace Digi.ControlModule
 
             if(timer != null)
             {
-                timer.ApplyAction("TriggerNow");
+                timer.Trigger();
             }
             else
             {
@@ -1067,7 +1067,7 @@ namespace Digi.ControlModule
                     if(runOnInput)
                     {
                         var pb = (IMyProgrammableBlock)block;
-                        pb.TryRun(pb.TerminalRunArgument);
+                        pb.Run();
                     }
                 }
                 else // but clients do need to send'em since PBs run server-side only
