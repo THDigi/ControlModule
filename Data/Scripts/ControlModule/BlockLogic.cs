@@ -987,8 +987,12 @@ namespace Digi.ControlModule
 
         private bool CheckBlocks()
         {
-            var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
+            // timer/PB must be properly working first
+            if(block == null || !block.IsWorking)
+                return false;
 
+            // must be in a valid seat (no cryo and not damaged beyond function)
+            var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
             if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsFunctional)
             {
                 if(lastGridCheck)
@@ -1001,23 +1005,22 @@ namespace Digi.ControlModule
                 return false;
             }
 
-            if(block == null || !block.IsWorking)
-                return false;
-
+            // check relation between local player and timer/PB
             var relation = block.GetPlayerRelationToOwner();
 
-            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies) // check ownership of timer/PB
+            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies)
                 return false;
 
             if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != MyAPIGateway.Session.Player.IdentityId)
             {
                 var idModule = (block as MyCubeBlock).IDModule;
 
-                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None) // check sharing
+                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None)
                     return false;
             }
 
-            if(!string.IsNullOrEmpty(filter)) // check name filtering
+            // seat/RC name filtering check
+            if(!string.IsNullOrEmpty(filter))
             {
                 if(++skipNameCheck >= 15)
                 {
