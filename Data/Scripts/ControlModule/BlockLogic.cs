@@ -989,7 +989,7 @@ namespace Digi.ControlModule
         {
             var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
 
-            if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsWorking)
+            if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsFunctional)
             {
                 if(lastGridCheck)
                 {
