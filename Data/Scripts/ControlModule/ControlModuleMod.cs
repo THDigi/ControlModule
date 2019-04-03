@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Gui;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Input;
 using VRage.ModAPI;
-using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 
@@ -26,12 +19,6 @@ namespace Digi.ControlModule
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class ControlModuleMod : MySessionComponentBase
     {
-        public override void LoadData()
-        {
-            Instance = this;
-            Log.SetUp("Control Module", 655948251, "ControlModule");
-        }
-
         public static ControlModuleMod Instance = null;
 
         private bool init;
@@ -45,7 +32,6 @@ namespace Digi.ControlModule
         public readonly Encoding Encode = Encoding.Unicode;
         public const ushort MSG_INPUTS = 33189;
         public const string ID_PREFIX = "ControlModule.";
-        public const string UI_INPUTSLIST_ID = ID_PREFIX + "InputList";
         public const int MAX_INPUTLIST_LINES = 10;
 
         private const float EPSILON = 0.000001f;
@@ -63,9 +49,15 @@ namespace Digi.ControlModule
             "\n" +
             "(This button isn't supposed to do anything when pressed)";
 
-        public void Init()
+        public override void LoadData()
         {
-            Log.Init();
+            Instance = this;
+            Log.ModName = "Control Module";
+            Log.AutoClose = false;
+        }
+
+        public override void BeforeStart()
+        {
             init = true;
 
             MyAPIGateway.Utilities.MessageEntered += MessageEntered;
@@ -213,7 +205,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(UI_INPUTSLIST_ID);
+                var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(ID_PREFIX + "InputList");
                 c.Title = MyStringId.GetOrCompute("Monitored inputs");
                 //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored."); // disabled because it blocks individual list items' tooltips
                 c.SupportsMultipleBlocks = true;
@@ -587,12 +579,7 @@ namespace Digi.ControlModule
             try
             {
                 if(!init)
-                {
-                    if(MyAPIGateway.Session == null)
-                        return;
-
-                    Init();
-                }
+                    return;
 
                 if(showInputs)
                 {
@@ -882,11 +869,11 @@ namespace Digi.ControlModule
                     else if(cmd.StartsWith("showinputs", StringComparison.Ordinal))
                     {
                         showInputs = !showInputs;
-                        MyAPIGateway.Utilities.ShowMessage(Log.modName, "Show inputs turned " + (showInputs ? "ON." : "OFF."));
+                        MyAPIGateway.Utilities.ShowMessage(Log.ModName, "Show inputs turned " + (showInputs ? "ON." : "OFF."));
                     }
                     else
                     {
-                        MyAPIGateway.Utilities.ShowMessage(Log.modName, "Command list:");
+                        MyAPIGateway.Utilities.ShowMessage(Log.ModName, "Command list:");
                         MyAPIGateway.Utilities.ShowMessage("/cm help ", " shows the list of inputs.");
                         MyAPIGateway.Utilities.ShowMessage("/cm showinputs ", " toggles showing what you press on the HUD.");
                     }
