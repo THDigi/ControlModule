@@ -32,6 +32,7 @@ namespace Digi.ControlModule
         public readonly Encoding Encode = Encoding.Unicode;
         public const ushort MSG_INPUTS = 33189;
         public const string ID_PREFIX = "ControlModule.";
+        public const string TERMINAL_PREFIX = "ControlModule.Terminal.";
         public const int MAX_INPUTLIST_LINES = 10;
 
         private const float EPSILON = 0.000001f;
@@ -186,7 +187,7 @@ namespace Digi.ControlModule
             //}
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "AddInputCombobox");
                 c.Title = MyStringId.GetOrCompute("Control Module"); // acts as the section title, more compact than using a label
                 c.Tooltip = MyStringId.GetOrCompute("Click on an input from the list to add it to the inputs list below.");
                 c.SupportsMultipleBlocks = true;
@@ -218,7 +219,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(ID_PREFIX + "RemoveSelected");
+                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "RemoveSelectedButton");
                 c.Title = MyStringId.GetOrCompute("Remove selected");
                 c.Tooltip = MyStringId.GetOrCompute("Remove the selected inputs from the above list.\n" +
                                                     "\n" +
@@ -242,7 +243,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputCheckCombobox");
                 c.Title = MyStringId.GetOrCompute("Multiple inputs check");
                 c.Tooltip = MyStringId.GetOrCompute("How to check the inputs before triggering.\n" +
                                                     "\n" +
@@ -269,7 +270,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(string.Empty);
+                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputStateCombobox");
                 c.Title = MyStringId.GetOrCompute("Trigger on state");
                 c.Tooltip = MyStringId.GetOrCompute("The input states that will trigger this block.\n" +
                                                     "\n" +
@@ -357,7 +358,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(string.Empty);
+                var c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(TERMINAL_PREFIX + "CockpitFilterTextbox");
                 c.Title = MyStringId.GetOrCompute("Partial cockpit name filter");
                 c.Tooltip = MyStringId.GetOrCompute("Only allow cockpits, seats or RC blocks that have this text in the name will be allowed to control this block.\n" +
                                                     "Leave blank to allow any cockpit, seat or RC block to control this block. (within ownership limits).\n" +
@@ -422,7 +423,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(string.Empty);
+                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "QuickIntroButton");
                 c.Title = MyStringId.GetOrCompute("Quick Introduction");
                 c.Tooltip = MyStringId.GetOrCompute(ControlModuleMod.QUICK_INTRODUCTION_TEXT);
                 c.SupportsMultipleBlocks = true;
