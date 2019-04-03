@@ -1094,7 +1094,7 @@ namespace Digi.ControlModule
                     if(runOnInput)
                     {
                         var pb = (IMyProgrammableBlock)block;
-                        pb.Run();
+                        pb.Run(string.Empty);
                     }
                 }
                 else // but clients do need to send'em since PBs run server-side only

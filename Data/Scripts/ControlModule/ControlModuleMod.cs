@@ -153,7 +153,7 @@ namespace Digi.ControlModule
 
                 if(logic.runOnInput)
                 {
-                    pb.Run();
+                    pb.Run(string.Empty);
                 }
             }
             catch(Exception e)
