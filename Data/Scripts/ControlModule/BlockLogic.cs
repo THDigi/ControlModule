@@ -235,7 +235,32 @@ namespace Digi.ControlModule
             // strip characters used in serialization and force lower letter case
             value.Replace(DATA_TAG_END.ToString(), "");
             value.Replace(DATA_SEPARATOR.ToString(), "");
-            filter = value.ToString().ToLower().Trim();
+
+            // ToLower()
+            for(int i = 0; i < value.Length; i++)
+            {
+                value[i] = char.ToLower(value[i]);
+            }
+
+            // TrimTrailingWhitespace()
+            int num = value.Length;
+
+            while(true)
+            {
+                if(num <= 0)
+                    break;
+
+                var c = value[num - 1];
+
+                if(c != ' ' && c != '\r' && c != '\n')
+                    break;
+
+                num--;
+            }
+
+            value.Length = num;
+
+            filter = value.ToString();
         }
 
         public void AddInput(string inputString)
