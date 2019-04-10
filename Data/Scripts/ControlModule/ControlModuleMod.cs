@@ -200,6 +200,7 @@ namespace Digi.ControlModule
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "AddInput");
+                    p.Getter = (b) => "(no value)";
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput(v);
                     tc.AddControl<TBlock>(p);
                 }
@@ -237,6 +238,7 @@ namespace Digi.ControlModule
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "RemoveInput");
+                    p.Getter = (b) => "(no value)";
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RemoveInput(v);
                     tc.AddControl<TBlock>(p);
                 }
