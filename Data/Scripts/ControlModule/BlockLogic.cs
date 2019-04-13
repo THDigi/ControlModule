@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Sandbox.Common.ObjectBuilders;
@@ -30,6 +31,7 @@ namespace Digi.ControlModule
         public IMyTerminalBlock block;
         public ControlCombination input = null;
         public bool readAllInputs = false;
+        public ImmutableArray<string> MonitoredInputs;
         public string filter = null;
         public byte inputState = 0;
         public byte inputCheck = 0;
@@ -263,6 +265,16 @@ namespace Digi.ControlModule
             filter = value.ToString();
         }
 
+        private void UpdateMonitoredInputs()
+        {
+            if(readAllInputs)
+                MonitoredInputs = ControlModuleMod.Instance.cachedMonitoredAll;
+            else if(input == null)
+                MonitoredInputs = ControlModuleMod.Instance.cachedMonitoredNone;
+            else
+                MonitoredInputs = ImmutableArray.ToImmutableArray(input.raw.GetInternalArray());
+        }
+
         public void AddInput(string inputString)
         {
             if(string.IsNullOrEmpty(inputString))
@@ -285,6 +297,8 @@ namespace Digi.ControlModule
                 else
                     input = ControlCombination.CreateFrom(input.combinationString + " " + inputString, false);
             }
+
+            UpdateMonitoredInputs();
 
             if(propertiesChanged == 0)
                 propertiesChanged = PROPERTIES_CHANGED_TICKS;
@@ -316,6 +330,8 @@ namespace Digi.ControlModule
                 input = ControlCombination.CreateFrom(String.Join(" ", input.raw), false);
             }
 
+            UpdateMonitoredInputs();
+
             if(propertiesChanged == 0)
                 propertiesChanged = PROPERTIES_CHANGED_TICKS;
 
@@ -346,6 +362,8 @@ namespace Digi.ControlModule
 
                     readAllInputs = false;
                 }
+
+                UpdateMonitoredInputs();
 
                 if(propertiesChanged == 0)
                     propertiesChanged = PROPERTIES_CHANGED_TICKS;
@@ -395,6 +413,7 @@ namespace Digi.ControlModule
                     input = (inputList.Count == 0 ? null : ControlCombination.CreateFrom(String.Join(" ", inputList)));
                 }
 
+                UpdateMonitoredInputs();
                 selected = null;
 
                 if(propertiesChanged == 0)
@@ -748,6 +767,8 @@ namespace Digi.ControlModule
             debug = false;
             monitorInMenus = false;
             debugName = null;
+
+            UpdateMonitoredInputs();
         }
 
         public void ResetNameAndSettings()

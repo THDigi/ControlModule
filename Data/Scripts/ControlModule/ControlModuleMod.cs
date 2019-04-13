@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -28,6 +29,9 @@ namespace Digi.ControlModule
 
         public readonly List<IMyTerminalControl> RedrawControlsTimer = new List<IMyTerminalControl>();
         public readonly List<IMyTerminalControl> RedrawControlsPB = new List<IMyTerminalControl>();
+
+        public readonly ImmutableArray<string> cachedMonitoredNone = ImmutableArray.ToImmutableArray(new string[] { });
+        public readonly ImmutableArray<string> cachedMonitoredAll = ImmutableArray.ToImmutableArray(new string[] { "all" });
 
         public readonly Encoding Encode = Encoding.Unicode;
         public const ushort MSG_INPUTS = 33189;
@@ -204,10 +208,16 @@ namespace Digi.ControlModule
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput(v);
                     tc.AddControl<TBlock>(p);
                 }
+                {
+                    var p = tc.CreateProperty<ImmutableDictionary<string, Type>, TBlock>(ID_PREFIX + "AllPossibleInputs");
+                    p.Getter = (b) => InputHandler.inputsImmutable;
+                    p.Setter = (b, v) => { };
+                    tc.AddControl<TBlock>(p);
+                }
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(ID_PREFIX + "InputList");
+                var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(TERMINAL_PREFIX + "MonitoredInputsListbox");
                 c.Title = MyStringId.GetOrCompute("Monitored inputs");
                 //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored."); // disabled because it blocks individual list items' tooltips
                 c.SupportsMultipleBlocks = true;
@@ -217,6 +227,14 @@ namespace Digi.ControlModule
                 c.VisibleRowsCount = 6; // TODO << set to 1 once UpdateVisual() works with RedrawControl()
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
+
+                // PB interface for this terminal control
+                {
+                    var p = tc.CreateProperty<ImmutableArray<string>, TBlock>(ID_PREFIX + "MonitoredInputs");
+                    p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().MonitoredInputs;
+                    p.Setter = (b, v) => { };
+                    tc.AddControl<TBlock>(p);
+                }
             }
 
             {

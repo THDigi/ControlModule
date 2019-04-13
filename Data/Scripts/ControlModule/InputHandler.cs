@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using System.Text;
 using Sandbox.Game;
 using Sandbox.ModAPI;
-using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.ModAPI;
 using VRage.Utils;
@@ -119,6 +118,7 @@ namespace Digi
 
     public static class InputHandler
     {
+        public static ImmutableDictionary<string, Type> inputsImmutable = null;
         public static Dictionary<string, object> inputs = null;
         public static Dictionary<object, string> inputNames = null;
         public static Dictionary<string, string> inputNiceNames = null;
@@ -400,6 +400,47 @@ namespace Digi
                 //{CONTROL_PREFIX+"primarybuildaction", MyControlsSpace.PRIMARY_BUILD_ACTION}, // doesn't seem to be usable
                 //{CONTROL_PREFIX+"secondarybuildaction", MyControlsSpace.SECONDARY_BUILD_ACTION},
             };
+
+            var inputsImmutableBuilder = ImmutableDictionary.CreateBuilder<string, Type>();
+
+            foreach(var kv in inputs)
+            {
+                Type type = null;
+                var custom = kv.Value as string;
+
+                if(custom != null)
+                {
+                    switch(custom)
+                    {
+                        case InputHandler.CONTROL_PREFIX + "view":
+                        case InputHandler.CONTROL_PREFIX + "movement":
+                        case InputHandler.MOUSE_PREFIX + "analog":
+                            type = typeof(Vector3);
+                            break;
+                        case InputHandler.GAMEPAD_PREFIX + "lsanalog":
+                        case InputHandler.GAMEPAD_PREFIX + "rsanalog":
+                            type = typeof(Vector2);
+                            break;
+                        case InputHandler.MOUSE_PREFIX + "x":
+                        case InputHandler.MOUSE_PREFIX + "y":
+                        case InputHandler.MOUSE_PREFIX + "scroll":
+                        case InputHandler.GAMEPAD_PREFIX + "ltanalog":
+                        case InputHandler.GAMEPAD_PREFIX + "rtanalog":
+                        case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
+                        case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
+                        case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
+                        case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
+                        case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
+                        case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
+                            type = typeof(float);
+                            break;
+                    }
+                }
+
+                inputsImmutableBuilder.Add(kv.Key, type);
+            }
+
+            inputsImmutable = inputsImmutableBuilder.ToImmutable();
 
             inputNames = new Dictionary<object, string>();
             inputValuesList = new List<object>();
