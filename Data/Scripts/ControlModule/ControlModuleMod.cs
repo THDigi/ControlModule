@@ -173,9 +173,10 @@ namespace Digi.ControlModule
 
             // the hidden inputs list property, accessible by PBs
             {
-                var c = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().pressedList;
-                tc.AddControl<TBlock>(c);
+                var p = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
+                p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().pressedList;
+                p.Setter = (b, v) => { };
+                tc.AddControl<TBlock>(p);
             }
 
             {
