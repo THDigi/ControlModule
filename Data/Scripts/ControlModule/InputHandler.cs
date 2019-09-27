@@ -329,6 +329,7 @@ namespace Digi
                 {CONTROL_PREFIX+"inventory", MyControlsSpace.INVENTORY},
                 {CONTROL_PREFIX+"controlmenu", MyControlsSpace.CONTROL_MENU},
                 {CONTROL_PREFIX+"factions", MyControlsSpace.FACTIONS_MENU},
+                {CONTROL_PREFIX+"contractscreen", MyControlsSpace.ACTIVE_CONTRACT_SCREEN},
                 {CONTROL_PREFIX+"lookleft", MyControlsSpace.ROTATION_LEFT},
                 {CONTROL_PREFIX+"lookright", MyControlsSpace.ROTATION_RIGHT},
                 {CONTROL_PREFIX+"lookup", MyControlsSpace.ROTATION_UP},
@@ -343,6 +344,7 @@ namespace Digi
                 {CONTROL_PREFIX+"lookaround", MyControlsSpace.LOOKAROUND},
                 {CONTROL_PREFIX+"cameramode", MyControlsSpace.CAMERA_MODE},
                 {CONTROL_PREFIX+"buildmenu", MyControlsSpace.BUILD_SCREEN},
+                {CONTROL_PREFIX+"buildplanner", MyControlsSpace.BUILD_PLANNER},
                 {CONTROL_PREFIX+"paint", MyControlsSpace.CUBE_COLOR_CHANGE},
                 {CONTROL_PREFIX+"switchleft", MyControlsSpace.SWITCH_LEFT}, // previous color or cam
                 {CONTROL_PREFIX+"switchright", MyControlsSpace.SWITCH_RIGHT}, // next color or cam
@@ -384,6 +386,7 @@ namespace Digi
                 {CONTROL_PREFIX+"specfree", MyControlsSpace.SPECTATOR_FREE},
                 {CONTROL_PREFIX+"specstatic", MyControlsSpace.SPECTATOR_STATIC},
                 
+                //{CONTROL_PREFIX+"wheeljump", MyControlsSpace.WHEEL_JUMP}, // not in game controls
                 // unknown controls:
                 //{CONTROL_PREFIX+"pickup", MyControlsSpace.PICK_UP},
                 //{CONTROL_PREFIX+"copypaste", MyControlsSpace.COPY_PASTE_ACTION},
