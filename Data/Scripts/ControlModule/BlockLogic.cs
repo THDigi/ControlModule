@@ -1156,15 +1156,7 @@ namespace Digi.ControlModule
                     }
 
                     var bytes = ControlModuleMod.Instance.Encode.GetBytes(str.ToString());
-
-                    if(bytes.Length > 4096)
-                    {
-                        Log.Error("Network message was larger than 4096 bytes! Raw data:\n" + str.ToString());
-                    }
-                    else
-                    {
-                        MyAPIGateway.Multiplayer.SendMessageToServer(ControlModuleMod.MSG_INPUTS, bytes, true);
-                    }
+                    MyAPIGateway.Multiplayer.SendMessageToServer(ControlModuleMod.MSG_INPUTS, bytes, true);
                 }
             }
         }
