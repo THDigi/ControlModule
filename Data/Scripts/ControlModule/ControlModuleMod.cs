@@ -573,8 +573,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                var logic = block.GameLogic.GetAs<ControlModule>();
-
+                var logic = block?.GameLogic?.GetAs<ControlModule>();
                 CMTerminalOpen = (logic != null);
 
                 // TODO << use when RedrawControl() and UpdateVisual() work together
