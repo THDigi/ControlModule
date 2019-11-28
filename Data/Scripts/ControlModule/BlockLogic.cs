@@ -85,16 +85,18 @@ namespace Digi.ControlModule
             if(block is IMyTimerBlock)
             {
                 if(ControlModuleMod.Instance.RedrawControlsTimer.Count == 0)
-                {
                     ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
-                }
             }
             else
             {
                 if(ControlModuleMod.Instance.RedrawControlsPB.Count == 0)
-                {
                     ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
-                }
+            }
+
+            if(block.CubeGrid?.Physics == null)
+            {
+                NeedsUpdate = MyEntityUpdateEnum.NONE;
+                return;
             }
 
             block.CustomNameChanged += NameChanged;
@@ -887,9 +889,6 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(block.CubeGrid.Physics == null)
-                    return;
-
                 if(first)
                 {
                     first = false;
