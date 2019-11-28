@@ -68,6 +68,8 @@ namespace Digi.ControlModule
         public const char DATA_TAG_END = '}';
         public const char DATA_SEPARATOR = ';';
         public const char DATA_KEYVALUE_SEPARATOR = ':';
+        public static readonly char[] DATA_SEPARATOR_ARRAY = { DATA_SEPARATOR };
+        public static readonly char[] DATA_KEYVALUE_SEPARATOR_ARRAY = { DATA_KEYVALUE_SEPARATOR };
 
         private const float EPSILON = 0.000001f;
 
@@ -272,7 +274,7 @@ namespace Digi.ControlModule
             else if(input == null)
                 MonitoredInputs = ControlModuleMod.Instance.cachedMonitoredNone;
             else
-                MonitoredInputs = ImmutableArray.ToImmutableArray(input.raw.GetInternalArray());
+                MonitoredInputs = ImmutableArray.ToImmutableArray(input.raw);
         }
 
         public void AddInput(string inputString)
@@ -471,7 +473,7 @@ namespace Digi.ControlModule
         //public void UpdateInputListUI(IMyTerminalControl c)
         //{
         //    var lb = c as IMyTerminalControlListbox;
-        //    lb.Title = MyStringId.GetOrCompute("Monitored inputs" + (input == null ? "" : " (" + input.combination.Count + ")"));
+        //    lb.Title = MyStringId.GetOrCompute((input == null ? "Monitored inputs" : $"Monitored inputs ({input.combination.Count.ToString()})"));
         //    lb.VisibleRowsCount = (input == null ? 1 : Math.Min(input.combination.Count, ControlModuleMod.MAX_INPUTLIST_LINES));
         //    lb.UpdateVisual();
         //    lb.RedrawControl();
@@ -544,7 +546,7 @@ namespace Digi.ControlModule
                                             var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
 
                                             if(u != null && d != null && l != null && r != null)
-                                                assigned.Add("Keyboard: " + u + ", " + l + ", " + d + ", " + r);
+                                                assigned.Add($"Keyboard: {u}, {l}, {d}, {r}");
                                         }
 
                                         {
@@ -554,7 +556,7 @@ namespace Digi.ControlModule
                                             var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
 
                                             if(u != null && d != null && l != null && r != null)
-                                                assigned.Add("Keyboard (alternate): " + u + ", " + l + ", " + d + ", " + r);
+                                                assigned.Add($"Keyboard (alternate): {u}, {l}, {d}, {r}");
                                         }
 
                                         assigned.Add("Gamepad: Right Stick");
@@ -569,7 +571,7 @@ namespace Digi.ControlModule
                                             var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
 
                                             if(f != null && b != null && l != null && r != null)
-                                                assigned.Add("Mouse: " + f + ", " + l + ", " + b + ", " + r);
+                                                assigned.Add($"Mouse: {f}, {l}, {b}, {r}");
                                         }
 
                                         {
@@ -579,7 +581,7 @@ namespace Digi.ControlModule
                                             var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
 
                                             if(f != null && b != null && l != null && r != null)
-                                                assigned.Add("Keyboard: " + f + ", " + l + ", " + b + ", " + r);
+                                                assigned.Add($"Keyboard: {f}, {l}, {b}, {r}");
                                         }
 
                                         {
@@ -589,7 +591,7 @@ namespace Digi.ControlModule
                                             var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
 
                                             if(f != null && b != null && l != null && r != null)
-                                                assigned.Add("Keyboard (alternate): " + f + ", " + l + ", " + b + ", " + r);
+                                                assigned.Add($"Keyboard (alternate): {f}, {l}, {b}, {r}");
                                         }
 
                                         assigned.Add("Gamepad: Left Stick"); // HACK hardcoded controls
@@ -664,12 +666,12 @@ namespace Digi.ControlModule
                 if(endIndex == -1)
                     return;
 
-                var data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR);
+                var data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
                 var str = ControlModuleMod.Instance.str;
 
                 foreach(var d in data)
                 {
-                    var kv = d.Split(DATA_KEYVALUE_SEPARATOR);
+                    var kv = d.Split(DATA_KEYVALUE_SEPARATOR_ARRAY);
                     var key = kv[0].Trim();
                     var value = kv[1].Trim();
 
@@ -714,7 +716,7 @@ namespace Digi.ControlModule
                             runOnInput = (value == "1");
                             break;
                         default:
-                            Log.Error("Unknown key in name: '" + key + "', data raw: '" + block.CustomName + "'");
+                            Log.Error($"Unknown key in name: '{key}', data raw: '{block.CustomName}'");
                             break;
                     }
                 }
@@ -1150,7 +1152,7 @@ namespace Digi.ControlModule
                             }
                             else
                             {
-                                Log.Error("Unknown type: " + val.GetType() + ", value=" + val + ", key=" + kv.Key);
+                                Log.Error($"Unknown type: {val.GetType().FullName}, value={val}, key={kv.Key}");
                             }
                         }
                     }

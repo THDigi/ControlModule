@@ -39,6 +39,9 @@ namespace Digi.ControlModule
         public const string TERMINAL_PREFIX = "ControlModule.Terminal.";
         public const int MAX_INPUTLIST_LINES = 10;
 
+        // TODO << use when RedrawControl() and UpdateVisual() work together
+        //public const string UI_INPUTSLIST_ID = TERMINAL_PREFIX + "MonitoredInputsListbox";
+
         private const float EPSILON = 0.000001f;
         public readonly StringBuilder str = new StringBuilder();
 
@@ -481,11 +484,11 @@ namespace Digi.ControlModule
                 else
                 {
                     if(v > 10)
-                        s.Append(Math.Round(v));
+                        s.Append((int)Math.Round(v));
                     else if(v > 1)
-                        s.AppendFormat("{0:0.0}", v);
+                        s.Append(v.ToString("0.0"));
                     else
-                        s.AppendFormat("{0:0.000}", v);
+                        s.Append(v.ToString("0.000"));
 
                     s.Append('s');
                 }

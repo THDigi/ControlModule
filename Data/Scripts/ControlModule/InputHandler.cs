@@ -17,6 +17,8 @@ namespace Digi
         public List<string> raw = new List<string>();
         public string combinationString = "";
 
+        public static readonly char[] SEPARATOR_ARRAY = { ' ' };
+
         public ControlCombination() { }
 
         public string GetStringCombination()
@@ -81,7 +83,7 @@ namespace Digi
             if(combinationString == null)
                 return null;
 
-            string[] data = combinationString.ToLower().Split(' ');
+            string[] data = combinationString.ToLower().Split(SEPARATOR_ARRAY);
 
             if(data.Length == 0)
                 return null;
