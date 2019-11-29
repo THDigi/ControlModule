@@ -71,6 +71,11 @@ namespace Digi.ControlModule
         public static readonly char[] DATA_SEPARATOR_ARRAY = { DATA_SEPARATOR };
         public static readonly char[] DATA_KEYVALUE_SEPARATOR_ARRAY = { DATA_KEYVALUE_SEPARATOR };
 
+        public const char PACKET_KEYVALUE_SEPARATOR = '=';
+        public const char PACKET_VALUE_SEPARATOR = ',';
+        public static readonly char[] PACKET_KEYVALUE_SEPARATOR_ARRAY = { PACKET_KEYVALUE_SEPARATOR };
+        public static readonly char[] PACKET_VALUE_SEPARATOR_ARRAY = { PACKET_VALUE_SEPARATOR };
+
         private const float EPSILON = 0.000001f;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -1133,7 +1138,7 @@ namespace Digi.ControlModule
 
                         if(val != null)
                         {
-                            str.Append('=');
+                            str.Append(PACKET_KEYVALUE_SEPARATOR);
 
                             if(val is float)
                             {
@@ -1142,12 +1147,12 @@ namespace Digi.ControlModule
                             else if(val is Vector2)
                             {
                                 var v = (Vector2)val;
-                                str.Append(v.X).Append(',').Append(v.Y);
+                                str.Append(v.X).Append(PACKET_VALUE_SEPARATOR).Append(v.Y);
                             }
                             else if(val is Vector3)
                             {
                                 var v = (Vector3)val;
-                                str.Append(v.X).Append(',').Append(v.Y).Append(',').Append(v.Z);
+                                str.Append(v.X).Append(PACKET_VALUE_SEPARATOR).Append(v.Y).Append(PACKET_VALUE_SEPARATOR).Append(v.Z);
                             }
                             else
                             {

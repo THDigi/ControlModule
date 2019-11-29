@@ -105,7 +105,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                string[] data = Encode.GetString(bytes).Split(ControlModule.DATA_SEPARATOR);
+                string[] data = Encode.GetString(bytes).Split(ControlModule.DATA_SEPARATOR_ARRAY);
 
                 if(data.Length == 0)
                     return;
@@ -134,12 +134,12 @@ namespace Digi.ControlModule
                 {
                     for(int i = 1; i < data.Length; i++)
                     {
-                        var kv = data[i].Split('=');
+                        var kv = data[i].Split(ControlModule.PACKET_KEYVALUE_SEPARATOR_ARRAY);
                         object value = null;
 
                         if(kv.Length == 2)
                         {
-                            var values = kv[1].Split(',');
+                            var values = kv[1].Split(ControlModule.PACKET_VALUE_SEPARATOR_ARRAY);
 
                             switch(values.Length)
                             {
