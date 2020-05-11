@@ -689,29 +689,29 @@ namespace Digi.ControlModule
                                         mouse.Append(text).Append(separator);
                                     break;
                                 case InputHandler.CONTROL_PREFIX + "view":
+                                {
+                                    var view = InputHandler.GetFullRotation();
+                                    if(view.LengthSquared() > 0)
                                     {
-                                        var view = InputHandler.GetFullRotation();
-                                        if(view.LengthSquared() > 0)
-                                        {
-                                            controls.Append(text).Append('=');
-                                            controls.Append(view.X).Append(',');
-                                            controls.Append(view.Y).Append(',');
-                                            controls.Append(view.Z).Append(separator);
-                                        }
+                                        controls.Append(text).Append('=');
+                                        controls.Append(view.X).Append(',');
+                                        controls.Append(view.Y).Append(',');
+                                        controls.Append(view.Z).Append(separator);
                                     }
-                                    break;
+                                }
+                                break;
                                 case InputHandler.CONTROL_PREFIX + "movement":
+                                {
+                                    var movement = MyAPIGateway.Input.GetPositionDelta();
+                                    if(movement.LengthSquared() > 0)
                                     {
-                                        var movement = MyAPIGateway.Input.GetPositionDelta();
-                                        if(movement.LengthSquared() > 0)
-                                        {
-                                            controls.Append(text).Append('=');
-                                            controls.Append(movement.X).Append(',');
-                                            controls.Append(movement.Y).Append(',');
-                                            controls.Append(movement.Z).Append(separator);
-                                        }
+                                        controls.Append(text).Append('=');
+                                        controls.Append(movement.X).Append(',');
+                                        controls.Append(movement.Y).Append(',');
+                                        controls.Append(movement.Z).Append(separator);
                                     }
-                                    break;
+                                }
+                                break;
                                 case InputHandler.MOUSE_PREFIX + "analog":
                                     if(MyAPIGateway.Input.GetMouseXForGamePlay() != 0 || MyAPIGateway.Input.GetMouseYForGamePlay() != 0 || MyAPIGateway.Input.DeltaMouseScrollWheelValue() != 0)
                                     {
@@ -722,89 +722,89 @@ namespace Digi.ControlModule
                                     }
                                     break;
                                 case InputHandler.GAMEPAD_PREFIX + "lsanalog":
+                                {
+                                    var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
+                                    var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
+                                    if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
                                     {
-                                        var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
-                                        var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
-                                        if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
-                                        {
-                                            gamepad.Append(text).Append('=');
-                                            gamepad.Append(x);
-                                            gamepad.Append(',');
-                                            gamepad.Append(y);
-                                            gamepad.Append(separator);
-                                        }
-                                        break;
+                                        gamepad.Append(text).Append('=');
+                                        gamepad.Append(x);
+                                        gamepad.Append(',');
+                                        gamepad.Append(y);
+                                        gamepad.Append(separator);
                                     }
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "rsanalog":
+                                {
+                                    var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
+                                    var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
+                                    if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
                                     {
-                                        var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
-                                        var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
-                                        if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
-                                        {
-                                            gamepad.Append(text).Append('=');
-                                            gamepad.Append(x);
-                                            gamepad.Append(',');
-                                            gamepad.Append(y);
-                                            gamepad.Append(separator);
-                                        }
-                                        break;
+                                        gamepad.Append(text).Append('=');
+                                        gamepad.Append(x);
+                                        gamepad.Append(',');
+                                        gamepad.Append(y);
+                                        gamepad.Append(separator);
                                     }
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "ltanalog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "rtanalog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                                 case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
-                                    {
-                                        var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
-                                        if(Math.Abs(v) > EPSILON)
-                                            gamepad.Append(text).Append('=').Append(v).Append(separator);
-                                        break;
-                                    }
+                                {
+                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
+                                    if(Math.Abs(v) > EPSILON)
+                                        gamepad.Append(text).Append('=').Append(v).Append(separator);
+                                    break;
+                                }
                             }
                         }
                     }

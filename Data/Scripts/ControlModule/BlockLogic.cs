@@ -542,68 +542,68 @@ namespace Digi.ControlModule
                             switch(text)
                             {
                                 case InputHandler.CONTROL_PREFIX + "view":
+                                {
+                                    // HACK hardcoded controls
+                                    assigned.Add("Mouse: Sensor");
+
                                     {
-                                        // HACK hardcoded controls
-                                        assigned.Add("Mouse: Sensor");
+                                        var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.Keyboard);
+                                        var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.Keyboard);
+                                        var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                        var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
 
-                                        {
-                                            var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.Keyboard);
-                                            var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.Keyboard);
-                                            var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.Keyboard);
-                                            var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
-
-                                            if(u != null && d != null && l != null && r != null)
-                                                assigned.Add($"Keyboard: {u}, {l}, {d}, {r}");
-                                        }
-
-                                        {
-                                            var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
-
-                                            if(u != null && d != null && l != null && r != null)
-                                                assigned.Add($"Keyboard (alternate): {u}, {l}, {d}, {r}");
-                                        }
-
-                                        assigned.Add("Gamepad: Right Stick");
-                                        break;
+                                        if(u != null && d != null && l != null && r != null)
+                                            assigned.Add($"Keyboard: {u}, {l}, {d}, {r}");
                                     }
+
+                                    {
+                                        var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+
+                                        if(u != null && d != null && l != null && r != null)
+                                            assigned.Add($"Keyboard (alternate): {u}, {l}, {d}, {r}");
+                                    }
+
+                                    assigned.Add("Gamepad: Right Stick");
+                                    break;
+                                }
                                 case InputHandler.CONTROL_PREFIX + "movement":
+                                {
                                     {
-                                        {
-                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Mouse);
-                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Mouse);
-                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Mouse);
-                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
+                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Mouse);
+                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Mouse);
+                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Mouse);
+                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
 
-                                            if(f != null && b != null && l != null && r != null)
-                                                assigned.Add($"Mouse: {f}, {l}, {b}, {r}");
-                                        }
-
-                                        {
-                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Keyboard);
-                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Keyboard);
-                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Keyboard);
-                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
-
-                                            if(f != null && b != null && l != null && r != null)
-                                                assigned.Add($"Keyboard: {f}, {l}, {b}, {r}");
-                                        }
-
-                                        {
-                                            var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
-                                            var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
-
-                                            if(f != null && b != null && l != null && r != null)
-                                                assigned.Add($"Keyboard (alternate): {f}, {l}, {b}, {r}");
-                                        }
-
-                                        assigned.Add("Gamepad: Left Stick"); // HACK hardcoded controls
-                                        break;
+                                        if(f != null && b != null && l != null && r != null)
+                                            assigned.Add($"Mouse: {f}, {l}, {b}, {r}");
                                     }
+
+                                    {
+                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Keyboard);
+                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Keyboard);
+                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
+
+                                        if(f != null && b != null && l != null && r != null)
+                                            assigned.Add($"Keyboard: {f}, {l}, {b}, {r}");
+                                    }
+
+                                    {
+                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+
+                                        if(f != null && b != null && l != null && r != null)
+                                            assigned.Add($"Keyboard (alternate): {f}, {l}, {b}, {r}");
+                                    }
+
+                                    assigned.Add("Gamepad: Left Stick"); // HACK hardcoded controls
+                                    break;
+                                }
                             }
                         }
 
