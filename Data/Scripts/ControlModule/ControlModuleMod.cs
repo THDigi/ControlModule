@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
+using Sandbox.Game;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game;
@@ -53,9 +54,7 @@ namespace Digi.ControlModule
             "\n" +
             "That's just a simple example, you can figure out how to do complex contraptions on your own, have fun!\n" +
             "\n" +
-            "For a more advanced guide or questions, search for 'Control Module' on the Steam workshop.\n" +
-            "\n" +
-            "(This button isn't supposed to do anything when pressed)";
+            "Pressing this button opens this mod's workshop page where you can find the full guide.";
 
         public override void LoadData()
         {
@@ -451,6 +450,7 @@ namespace Digi.ControlModule
                 c.Title = MyStringId.GetOrCompute("Quick Introduction");
                 c.Tooltip = MyStringId.GetOrCompute(ControlModuleMod.QUICK_INTRODUCTION_TEXT);
                 c.SupportsMultipleBlocks = true;
+                c.Action = (b) => { MyVisualScriptLogicProvider.OpenSteamOverlayLocal("https://steamcommunity.com/sharedfiles/filedetails/?id=" + Log.WorkshopId.ToString()); };
                 tc.AddControl<TBlock>(c);
                 //redrawControls.Add(c);
             }
