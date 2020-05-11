@@ -1084,7 +1084,7 @@ namespace Digi.ControlModule
             }
 
             // must be the same grid or connected grid
-            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId && !MyAPIGateway.GridGroups.HasConnection(controller.CubeGrid, block.CubeGrid, GridLinkTypeEnum.Logical))
+            if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId && !MyAPIGateway.GridGroups.HasConnection(controller.CubeGrid, block.CubeGrid, GridLinkTypeEnum.Mechanical))
                 return false;
 
             return true;
