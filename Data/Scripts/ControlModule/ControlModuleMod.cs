@@ -321,7 +321,7 @@ namespace Digi.ControlModule
                 c.Title = MyStringId.GetOrCompute("Hold to trigger");
                 c.Tooltip = MyStringId.GetOrCompute("Will require user to hold the input(s) for this amount of time for the block to be triggered.\n" +
                                                     "\n" +
-                                                    "0.016 is one update tick, anything below that is treated as off.\n" +
+                                                    "0.016 is one update tick.\n" +
                                                     "Requires a pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
@@ -329,8 +329,8 @@ namespace Digi.ControlModule
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
-                c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().HoldDelay = (v < 0.016f ? 0 : v);
+                c.SetLogLimits(0.005f, 600); // NOTE doesn't work with 0 min
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().HoldDelay = v;
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().HoldDelay;
                 c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().HoldDelay);
                 tc.AddControl<TBlock>(c);
@@ -343,7 +343,7 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("Triggers the block on an interval as long as you hold the input(s) pressed.\n" +
                                                     "\n" +
                                                     "If 'hold to trigger' is set then this will only start after that triggers.\n" +
-                                                    "0.016 is one update tick, anything below that is treated as off.\n" +
+                                                    "0.016 is one update tick.\n" +
                                                     "Requires the pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
@@ -351,8 +351,8 @@ namespace Digi.ControlModule
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
-                c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RepeatDelay = (v < 0.016f ? 0 : v);
+                c.SetLogLimits(0.005f, 600); // NOTE doesn't work with 0 min
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RepeatDelay = v;
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().RepeatDelay;
                 c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().RepeatDelay);
                 tc.AddControl<TBlock>(c);
@@ -365,7 +365,7 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("This will delay the block triggering when you release the input.\n" +
                                                     "\n" +
                                                     "Does not stack when releasing multiple times, self-resets when you re-release.\n" +
-                                                    "0.016 is one update tick, anything below that is treated as off.\n" +
+                                                    "0.016 is one update tick.\n" +
                                                     "Requires the released input state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
@@ -373,8 +373,8 @@ namespace Digi.ControlModule
                     return l.HasValidInput && l.inputState >= 1;
                 };
                 c.SupportsMultipleBlocks = true;
-                c.SetLogLimits(0.015f, 600);
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().ReleaseDelay = (v < 0.016f ? 0 : v);
+                c.SetLogLimits(0.005f, 600); // NOTE doesn't work with 0 min
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().ReleaseDelay = v;
                 c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().ReleaseDelay;
                 c.Writer = (b, s) => TerminalSliderFormat(b, s, b.GameLogic.GetAs<ControlModule>().ReleaseDelay);
                 tc.AddControl<TBlock>(c);

@@ -162,6 +162,11 @@ namespace Digi.ControlModule
             get { return (float)releaseDelayTrigger; }
             set
             {
+                if(value < 0.008f)
+                    value = 0;
+                else if(value < 0.017f)
+                    value = 0.016f;
+
                 releaseDelayTrigger = Math.Round(value, 3);
 
                 if(propertiesChanged == 0)
@@ -174,6 +179,11 @@ namespace Digi.ControlModule
             get { return (float)repeatDelayTrigger; }
             set
             {
+                if(value < 0.008f)
+                    value = 0;
+                else if(value < 0.017f)
+                    value = 0.016f;
+
                 repeatDelayTrigger = Math.Round(value, 3);
 
                 if(propertiesChanged == 0)
@@ -186,6 +196,11 @@ namespace Digi.ControlModule
             get { return (float)holdDelayTrigger; }
             set
             {
+                if(value < 0.008f)
+                    value = 0;
+                else if(value < 0.017f)
+                    value = 0.016f;
+
                 holdDelayTrigger = Math.Round(value, 3);
 
                 if(propertiesChanged == 0)
