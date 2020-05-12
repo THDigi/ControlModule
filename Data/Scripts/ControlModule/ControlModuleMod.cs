@@ -389,16 +389,16 @@ namespace Digi.ControlModule
                                                     "Text is case insensitive.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
-                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().Filter;
-                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = v;
+                c.Getter = (b) => b.GameLogic.GetAs<ControlModule>().FilterSB;
+                c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().FilterSB = v;
                 tc.AddControl<TBlock>(c);
                 redrawControls.Add(c);
 
                 // PB interface for this terminal control
                 {
                     var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
-                    p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().filter;
-                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().Filter = new StringBuilder(v);
+                    p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().FilterStr;
+                    p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().FilterStr = v;
                     tc.AddControl<TBlock>(p);
                 }
             }

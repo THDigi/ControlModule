@@ -32,7 +32,8 @@ namespace Digi.ControlModule
         public ControlCombination input = null;
         public bool readAllInputs = false;
         public ImmutableArray<string> MonitoredInputs;
-        public string filter = null;
+        private string filter = null;
+        private StringBuilder filterSB = new StringBuilder(128);
         public byte inputState = 0;
         public byte inputCheck = 0;
         public double repeatDelayTrigger = 0;
@@ -208,12 +209,25 @@ namespace Digi.ControlModule
             }
         }
 
-        public StringBuilder Filter
+        public StringBuilder FilterSB
         {
-            get { return new StringBuilder(filter); }
+            get { return filterSB.Clear().Append(filter); }
             set
             {
                 SetFilter(value);
+
+                if(propertiesChanged == 0)
+                    propertiesChanged = PROPERTIES_CHANGED_TICKS;
+            }
+        }
+
+        public string FilterStr
+        {
+            get { return filter; }
+            set
+            {
+                filterSB.Clear().Append(value);
+                SetFilter(filterSB);
 
                 if(propertiesChanged == 0)
                     propertiesChanged = PROPERTIES_CHANGED_TICKS;
@@ -256,11 +270,12 @@ namespace Digi.ControlModule
             }
         }
 
-        public void SetFilter(StringBuilder value)
+        private void SetFilter(StringBuilder value)
         {
-            // strip characters used in serialization and force lower letter case
-            value.Replace(DATA_TAG_END.ToString(), "");
-            value.Replace(DATA_SEPARATOR.ToString(), "");
+            // strip characters used in serialization
+            //value.Replace('{', '_');
+            value.Replace(DATA_TAG_END, '_');
+            value.Replace(DATA_SEPARATOR, '_');
 
             // ToLower()
             for(int i = 0; i < value.Length; i++)
@@ -1091,7 +1106,7 @@ namespace Digi.ControlModule
                 if(++skipNameCheck >= 15)
                 {
                     skipNameCheck = 0;
-                    lastNameCheck = controller.CustomName.ToLower().Contains(filter);
+                    lastNameCheck = controller.CustomName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) != -1;
                 }
 
                 if(!lastNameCheck)
