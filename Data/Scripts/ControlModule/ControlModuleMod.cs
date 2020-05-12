@@ -222,7 +222,8 @@ namespace Digi.ControlModule
             {
                 var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(TERMINAL_PREFIX + "MonitoredInputsListbox");
                 c.Title = MyStringId.GetOrCompute("Monitored inputs");
-                //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored."); // disabled because it blocks individual list items' tooltips
+                // disabled because it blocks individual list items' tooltips
+                //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored.");
                 c.SupportsMultipleBlocks = true;
                 c.Multiselect = true;
                 c.ListContent = (b, list, selected) => b.GameLogic.GetAs<ControlModule>().GetInputsList(list, selected);
@@ -338,7 +339,7 @@ namespace Digi.ControlModule
 
             {
                 var c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "RepeatDelay");
-                c.Title = MyStringId.GetOrCompute("Repeat interval");
+                c.Title = MyStringId.GetOrCompute("Repeat while any pressed");
                 c.Tooltip = MyStringId.GetOrCompute("Triggers the block on an interval as long as you hold the input(s) pressed.\n" +
                                                     "\n" +
                                                     "If 'hold to trigger' is set then this will only start after that triggers.\n" +
@@ -407,9 +408,8 @@ namespace Digi.ControlModule
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
                 c.Title = MyStringId.GetOrCompute("Run on input");
                 c.Tooltip = MyStringId.GetOrCompute("Toggle if the PB is executed when inputs are registered.\n" +
-                                                    "This will allow you to update the internal Inputs dictionary without executing the PB.\n" +
-                                                    "\n" +
-                                                    "The argument defined above is the one used when executing the PB.");
+                                                    "If unchecked it will still update the inputs dictionary but will not run PB.\n" +
+                                                    "Useful if you handle the PB handles its own update.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RunOnInput = v;
@@ -436,7 +436,8 @@ namespace Digi.ControlModule
                 var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "MonitorInMenus");
                 c.Title = MyStringId.GetOrCompute("Monitor inputs in menus");
                 c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" +
-                                                    "If enabled, pressing the monitored inputs will also work while you're in any menu, except chat.");
+                                                    "If enabled, pressing the monitored inputs will also work while you're in any menu, except chat.\n" +
+                                                    "Useful for PBs to look at echo output while pressing stuff for example.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
                 c.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().MonitorInMenus = v;
