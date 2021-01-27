@@ -1074,6 +1074,12 @@ namespace Digi.ControlModule
 
             // must be in a valid seat (no cryo and not damaged beyond function)
             var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
+
+            if(controller == null && MyAPIGateway.Session.ControlledObject is IMyLargeTurretBase)
+            {
+                controller = MyAPIGateway.Session.Player?.Character?.Parent as IMyShipController;
+            }
+
             if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsFunctional)
             {
                 if(lastGridCheck)
