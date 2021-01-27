@@ -420,7 +420,7 @@ namespace Digi.ControlModule
             try
             {
                 selected = selectedList;
-                RefreshUI(ControlModuleMod.ID_PREFIX + "RemoveSelected");
+                RefreshUI(ControlModuleMod.TERMINAL_PREFIX + "RemoveSelectedButton");
             }
             catch(Exception e)
             {
