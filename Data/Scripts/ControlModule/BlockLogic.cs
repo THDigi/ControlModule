@@ -48,20 +48,21 @@ namespace Digi.ControlModule
         private bool lastPressed = false;
         private long lastPressedTime = 0;
         private long lastReleaseTime = 0;
-        private bool lastGridCheck = false;
-        private bool lastNameCheck = false;
-        private byte skipNameCheck = byte.MaxValue - 5;
         private byte propertiesChanged = 0;
-        private string debugName = null;
+        private string CleanBlockName = null;
+
+        private bool NameIsMatching = false;
+        private int NameRecheckAfterTick = 0;
 
         public bool lastInputAddedValid = true;
+
+        long LastControlledEntityId;
+        IMyHudNotification ControlledNotification;
 
         public const byte PROPERTIES_CHANGED_TICKS = 15;
 
         public Dictionary<string, object> pressedList = new Dictionary<string, object>();
         public List<MyTerminalControlListBoxItem> selected = null;
-
-        private readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 
         private const string TIMESPAN_FORMAT = @"mm\:ss\.f";
 
@@ -758,8 +759,8 @@ namespace Digi.ControlModule
                     }
                 }
 
-                if(debug)
-                    debugName = GetNameNoData();
+                //if(debug)
+                CleanBlockName = GetNameNoData();
 
                 // HACK used to indicate if there are new lines in the name to sanitize it because PB has some issues with that
                 name = block.CustomName;
@@ -805,7 +806,7 @@ namespace Digi.ControlModule
             runOnInput = true;
             debug = false;
             monitorInMenus = false;
-            debugName = null;
+            CleanBlockName = null;
 
             UpdateMonitoredInputs();
         }
@@ -1063,7 +1064,7 @@ namespace Digi.ControlModule
         private void DebugPrint(string message, int timeMs = 500, string font = MyFontEnum.White)
         {
             if(debug)
-                MyAPIGateway.Utilities.ShowNotification(debugName + ": " + message, timeMs, font);
+                MyAPIGateway.Utilities.ShowNotification(CleanBlockName + ": " + message, timeMs, font);
         }
 
         private bool CheckBlocks()
@@ -1072,56 +1073,112 @@ namespace Digi.ControlModule
             if(block == null || !block.IsWorking)
                 return false;
 
-            // must be in a valid seat (no cryo and not damaged beyond function)
-            IMyShipController controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
+            IMyPlayer player = MyAPIGateway.Session?.Player;
+            if(player == null)
+                return false; // some game bugs show this as null for first few ticks
 
-            if(controller == null && MyAPIGateway.Session.ControlledObject is IMyLargeTurretBase)
+            #region get local player's cockpit
+            var controlledObject = MyAPIGateway.Session.ControlledObject;
+
+            IMyTerminalBlock controller = controlledObject as IMyShipController;
+
+            // also allow seat+turret/CTC
+            if(controller == null && (controlledObject is IMyLargeTurretBase || controlledObject is IMyTurretControlBlock))
             {
-                controller = MyAPIGateway.Session.Player?.Character?.Parent as IMyShipController;
+                controller = player.Character?.Parent as IMyShipController;
             }
 
-            if(controller == null || controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber) || !controller.IsFunctional)
-            {
-                if(lastGridCheck)
-                {
-                    lastGridCheck = false;
-                    lastNameCheck = false;
-                    skipNameCheck = byte.MaxValue - 5;
-                }
-
+            if(controller == null || !controller.IsFunctional)
                 return false;
+            #endregion
+
+            bool isNew = LastControlledEntityId != controller.EntityId;
+            if(isNew)
+            {
+                LastControlledEntityId = controller.EntityId;
+
+                // prevent lingering notifications from confusing people
+                ControlledNotification?.Hide();
             }
 
-            // check relation between local player and timer/PB
-            MyRelationsBetweenPlayerAndBlock relation = block.GetPlayerRelationToOwner();
-
-            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies)
+            // no cryos :]
+            if(controller.BlockDefinition.TypeId == typeof(MyObjectBuilder_CryoChamber))
                 return false;
-
-            if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != MyAPIGateway.Session.Player.IdentityId)
-            {
-                MyIDModule idModule = (block as MyCubeBlock).IDModule;
-
-                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None)
-                    return false;
-            }
-
-            // seat/RC name filtering check
-            if(!string.IsNullOrEmpty(filter))
-            {
-                if(++skipNameCheck >= 15)
-                {
-                    skipNameCheck = 0;
-                    lastNameCheck = controller.CustomName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) != -1;
-                }
-
-                if(!lastNameCheck)
-                    return false;
-            }
 
             // must be the same grid or connected grid
             if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId && !MyAPIGateway.GridGroups.HasConnection(controller.CubeGrid, block.CubeGrid, GridLinkTypeEnum.Mechanical))
                 return false;
+
+            #region check relation between local player and timer/PB
+            long localIdentityId = MyAPIGateway.Session.Player.IdentityId;
+
+            MyRelationsBetweenPlayerAndBlock relation = block.GetUserRelationToOwner(localIdentityId);
+
+            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies)
+                return false;
+
+            if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != localIdentityId)
+            {
+                MyIDModule idModule = (block as MyCubeBlock).IDModule;
+                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None)
+                    return false;
+            }
+            #endregion
+
+            if(!string.IsNullOrEmpty(filter))
+            {
+                int tick = MyAPIGateway.Session.GameplayFrameCounter;
+                if(isNew || NameRecheckAfterTick <= tick)
+                {
+                    NameRecheckAfterTick = tick + 60;
+                    NameIsMatching = controller.CustomName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) != -1;
+                }
+
+                if(!NameIsMatching)
+                    return false;
+            }
+
+            if(isNew)
+            {
+                if(ControlledNotification == null)
+                    ControlledNotification = MyAPIGateway.Utilities.CreateNotification("", 3000, MyFontEnum.Debug);
+
+                StringBuilder sb = ControlModuleMod.Instance.str.Clear();
+
+                sb.Append("ControlModule [").Append(CleanBlockName).Append("] activated. ");
+
+                if(input != null && input.raw.Count > 0)
+                {
+                    sb.Append("Inputs: ");
+
+                    const int PrintMaxInputs = 4;
+                    int loopTo = Math.Min(PrintMaxInputs, input.raw.Count);
+
+                    for(int i = 0; i < loopTo; i++)
+                    {
+                        sb.Append(input.raw[i]).Append(", ");
+                    }
+
+                    sb.Length -= 2;
+
+                    if(input.raw.Count > PrintMaxInputs)
+                    {
+                        sb.Append(", +").Append(input.raw.Count - PrintMaxInputs).Append("...");
+                    }
+                }
+                else if(readAllInputs)
+                {
+                    sb.Append("Inputs: (all)");
+                }
+                else
+                {
+                    sb.Append("Inputs: N/A");
+                }
+
+                ControlledNotification.Hide();
+                ControlledNotification.Text = sb.ToString();
+                ControlledNotification.Show();
+            }
 
             return true;
         }

@@ -48,7 +48,7 @@ namespace Digi.ControlModule
 
         public const string QUICK_INTRODUCTION_TEXT = "----- Control Module mod - quick introduction ------\n" +
             "This mod allows players to trigger timer and programmable blocks using keyboard,\n" +
-            "mouse or gamepad while sitting in a cockpit, seat or controlling via remote control.\n" +
+            "mouse or gamepad while controlling a cockpit, seat, RC, turret or custom turret controller.\n" +
             "\n" +
             "To start, simply add some actions to a timer block's toolbar, add a key from the inputs list, get in a seat and press the key.\n" +
             "\n" +
@@ -383,9 +383,11 @@ namespace Digi.ControlModule
 
             {
                 IMyTerminalControlTextbox c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(TERMINAL_PREFIX + "CockpitFilterTextbox");
-                c.Title = MyStringId.GetOrCompute("Partial cockpit name filter");
-                c.Tooltip = MyStringId.GetOrCompute("Only allow cockpits, seats or RC blocks that have this text in the name will be allowed to control this block.\n" +
-                                                    "Leave blank to allow any cockpit, seat or RC block to control this block. (within ownership limits).\n" +
+                c.Title = MyStringId.GetOrCompute("Partial seat name filter");
+                c.Tooltip = MyStringId.GetOrCompute("A name filter for controllable blocks where players can sit to benefit from the specified inputs in this block.\n" +
+                                                    "Currently allowed blocks: cockpit, seat, remote control.\n" +
+                                                    "Also, sitting in a cockpit/seat and controlling turrets and custom turret controller will still allow the cockpit/seat to be used by control module.\n" +
+                                                    "Leave blank to allow any of the above block types to use this block's inputs. (within ownership limits).\n" +
                                                     "Text is case insensitive.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
@@ -422,7 +424,7 @@ namespace Digi.ControlModule
                 IMyTerminalControlCheckbox c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "Debug");
                 c.Title = MyStringId.GetOrCompute("Show behavior on HUD");
                 c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" +
-                                                    "Show HUD messages to cockpit pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
+                                                    "Show HUD messages to pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
                                                     "Useful for finding issues or understanding how the block will behave.");
                 c.Enabled = (b) => b.GameLogic.GetAs<ControlModule>().HasValidInput;
                 c.SupportsMultipleBlocks = true;
