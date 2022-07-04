@@ -291,7 +291,7 @@ namespace Digi.ControlModule
                 if(num <= 0)
                     break;
 
-                var c = value[num - 1];
+                char c = value[num - 1];
 
                 if(c != ' ' && c != '\r' && c != '\n')
                     break;
@@ -391,8 +391,8 @@ namespace Digi.ControlModule
                 }
                 else
                 {
-                    var val = InputHandler.inputValuesList[id];
-                    var key = InputHandler.inputNames[val];
+                    object val = InputHandler.inputValuesList[id];
+                    string key = InputHandler.inputNames[val];
 
                     if(input == null)
                         input = ControlCombination.CreateFrom(key, false);
@@ -442,9 +442,9 @@ namespace Digi.ControlModule
                 }
                 else if(input != null)
                 {
-                    var inputList = input.raw;
+                    List<string> inputList = input.raw;
 
-                    foreach(var s in selected)
+                    foreach(MyTerminalControlListBoxItem s in selected)
                     {
                         inputList.Remove(s.UserData as string);
                     }
@@ -480,7 +480,7 @@ namespace Digi.ControlModule
                 else
                     controls = ControlModuleMod.Instance.RedrawControlsPB;
 
-                foreach(var c in controls)
+                foreach(IMyTerminalControl c in controls)
                 {
                     // TODO << use when RedrawControl() and UpdateVisual() work together
                     //if(c.Id == ControlModuleMod.UI_INPUTSLIST_ID)
@@ -529,13 +529,13 @@ namespace Digi.ControlModule
                 }
                 else if(input != null)
                 {
-                    var assigned = new List<string>();
+                    List<string> assigned = new List<string>();
 
-                    var str = ControlModuleMod.Instance.str;
+                    StringBuilder str = ControlModuleMod.Instance.str;
 
-                    foreach(var obj in input.combination)
+                    foreach(object obj in input.combination)
                     {
-                        var key = InputHandler.inputNames[obj];
+                        string key = InputHandler.inputNames[obj];
                         str.Clear();
                         InputHandler.AppendNiceNamePrefix(key, obj, str);
                         str.Append(InputHandler.inputNiceNames[key]);
@@ -547,27 +547,27 @@ namespace Digi.ControlModule
 
                         if(obj is MyStringId)
                         {
-                            var controlId = (MyStringId)obj;
+                            MyStringId controlId = (MyStringId)obj;
 
-                            var mouse = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Mouse);
+                            string mouse = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Mouse);
                             if(mouse != null)
                                 assigned.Add("Mouse: " + mouse);
 
-                            var kb1 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Keyboard);
+                            string kb1 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.Keyboard);
                             if(kb1 != null)
                                 assigned.Add("Keyboard: " + kb1);
 
-                            var kb2 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.KeyboardSecond);
+                            string kb2 = GetControlAssigned(controlId, MyGuiInputDeviceEnum.KeyboardSecond);
                             if(kb2 != null)
                                 assigned.Add("Keyboard (alternate): " + kb2);
 
-                            var gamepad = GetControlAssigned(controlId, MyGuiInputDeviceEnum.None); // using None as gamepad
+                            string gamepad = GetControlAssigned(controlId, MyGuiInputDeviceEnum.None); // using None as gamepad
                             if(gamepad != null)
                                 assigned.Add("Gamepad: " + gamepad);
                         }
                         else if(obj is string)
                         {
-                            var text = (string)obj;
+                            string text = (string)obj;
 
                             switch(text)
                             {
@@ -577,20 +577,20 @@ namespace Digi.ControlModule
                                     assigned.Add("Mouse: Sensor");
 
                                     {
-                                        var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.Keyboard);
-                                        var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.Keyboard);
-                                        var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.Keyboard);
-                                        var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
+                                        string u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.Keyboard);
+                                        string d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.Keyboard);
+                                        string l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                        string r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.Keyboard);
 
                                         if(u != null && d != null && l != null && r != null)
                                             assigned.Add($"Keyboard: {u}, {l}, {d}, {r}");
                                     }
 
                                     {
-                                        var u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string u = GetControlAssigned(MyControlsSpace.ROTATION_UP, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string d = GetControlAssigned(MyControlsSpace.ROTATION_DOWN, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string l = GetControlAssigned(MyControlsSpace.ROTATION_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string r = GetControlAssigned(MyControlsSpace.ROTATION_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
 
                                         if(u != null && d != null && l != null && r != null)
                                             assigned.Add($"Keyboard (alternate): {u}, {l}, {d}, {r}");
@@ -602,30 +602,30 @@ namespace Digi.ControlModule
                                 case InputHandler.CONTROL_PREFIX + "movement":
                                 {
                                     {
-                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Mouse);
-                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Mouse);
-                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Mouse);
-                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
+                                        string f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Mouse);
+                                        string b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Mouse);
+                                        string l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Mouse);
+                                        string r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Mouse);
 
                                         if(f != null && b != null && l != null && r != null)
                                             assigned.Add($"Mouse: {f}, {l}, {b}, {r}");
                                     }
 
                                     {
-                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Keyboard);
-                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Keyboard);
-                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Keyboard);
-                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
+                                        string f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.Keyboard);
+                                        string b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.Keyboard);
+                                        string l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.Keyboard);
+                                        string r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.Keyboard);
 
                                         if(f != null && b != null && l != null && r != null)
                                             assigned.Add($"Keyboard: {f}, {l}, {b}, {r}");
                                     }
 
                                     {
-                                        var f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
-                                        var r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string f = GetControlAssigned(MyControlsSpace.FORWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string b = GetControlAssigned(MyControlsSpace.BACKWARD, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string l = GetControlAssigned(MyControlsSpace.STRAFE_LEFT, MyGuiInputDeviceEnum.KeyboardSecond);
+                                        string r = GetControlAssigned(MyControlsSpace.STRAFE_RIGHT, MyGuiInputDeviceEnum.KeyboardSecond);
 
                                         if(f != null && b != null && l != null && r != null)
                                             assigned.Add($"Keyboard (alternate): {f}, {l}, {b}, {r}");
@@ -639,7 +639,7 @@ namespace Digi.ControlModule
 
                         if(assigned.Count > 0)
                         {
-                            foreach(var a in assigned)
+                            foreach(string a in assigned)
                             {
                                 str.Append('\n').Append(a);
                             }
@@ -668,7 +668,7 @@ namespace Digi.ControlModule
 
         private static string GetControlAssigned(MyStringId controlId, MyGuiInputDeviceEnum device)
         {
-            var control = MyAPIGateway.Input.GetGameControl(controlId);
+            IMyControl control = MyAPIGateway.Input.GetGameControl(controlId);
 
             switch(device)
             {
@@ -691,26 +691,26 @@ namespace Digi.ControlModule
             {
                 ResetSettings(); // first reset fields
 
-                var name = block.CustomName.ToLower();
-                var startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
+                string name = block.CustomName.ToLower();
+                int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
 
                 if(startIndex == -1)
                     return;
 
                 startIndex += DATA_TAG_START.Length;
-                var endIndex = name.IndexOf(DATA_TAG_END, startIndex);
+                int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
 
                 if(endIndex == -1)
                     return;
 
-                var data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
-                var str = ControlModuleMod.Instance.str;
+                string[] data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
+                StringBuilder str = ControlModuleMod.Instance.str;
 
-                foreach(var d in data)
+                foreach(string d in data)
                 {
-                    var kv = d.Split(DATA_KEYVALUE_SEPARATOR_ARRAY);
-                    var key = kv[0].Trim();
-                    var value = kv[1].Trim();
+                    string[] kv = d.Split(DATA_KEYVALUE_SEPARATOR_ARRAY);
+                    string key = kv[0].Trim();
+                    string value = kv[1].Trim();
 
                     switch(key)
                     {
@@ -819,7 +819,7 @@ namespace Digi.ControlModule
 
         private void SaveToName(string forceName = null)
         {
-            var trimmedName = (forceName ?? GetNameNoData());
+            string trimmedName = (forceName ?? GetNameNoData());
 
             if(AreSettingsDefault())
             {
@@ -829,7 +829,7 @@ namespace Digi.ControlModule
                 return;
             }
 
-            var str = ControlModuleMod.Instance.str;
+            StringBuilder str = ControlModuleMod.Instance.str;
             str.Clear();
             str.Append(trimmedName);
             str.Append(' ', 3);
@@ -905,14 +905,14 @@ namespace Digi.ControlModule
 
         private string GetNameNoData()
         {
-            var name = block.CustomName;
-            var startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
+            string name = block.CustomName;
+            int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
 
             if(startIndex == -1)
                 return name;
 
-            var nameNoData = name.Substring(0, startIndex);
-            var endIndex = name.IndexOf(DATA_TAG_END, startIndex);
+            string nameNoData = name.Substring(0, startIndex);
+            int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
 
             if(endIndex == -1)
                 return nameNoData.Trim();
@@ -945,9 +945,9 @@ namespace Digi.ControlModule
                 if(pressChanged)
                     lastPressed = pressed;
 
-                var checkedHoldDelayTrigger = (inputState <= 1 ? Math.Round(holdDelayTrigger, 3) : 0);
-                var checkedRepeatDelayTrigger = (inputState <= 1 ? Math.Round(repeatDelayTrigger, 3) : 0);
-                var checkedReleaseDelayTrigger = (inputState >= 1 ? Math.Round(releaseDelayTrigger, 3) : 0);
+                double checkedHoldDelayTrigger = (inputState <= 1 ? Math.Round(holdDelayTrigger, 3) : 0);
+                double checkedRepeatDelayTrigger = (inputState <= 1 ? Math.Round(repeatDelayTrigger, 3) : 0);
+                double checkedReleaseDelayTrigger = (inputState >= 1 ? Math.Round(releaseDelayTrigger, 3) : 0);
 
                 bool holdCheck = ((checkedHoldDelayTrigger > 0 && lastPressedTime == 0) || Math.Abs(checkedHoldDelayTrigger) < EPSILON);
 
@@ -1073,7 +1073,7 @@ namespace Digi.ControlModule
                 return false;
 
             // must be in a valid seat (no cryo and not damaged beyond function)
-            var controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
+            IMyShipController controller = MyAPIGateway.Session.ControlledObject as IMyShipController;
 
             if(controller == null && MyAPIGateway.Session.ControlledObject is IMyLargeTurretBase)
             {
@@ -1093,14 +1093,14 @@ namespace Digi.ControlModule
             }
 
             // check relation between local player and timer/PB
-            var relation = block.GetPlayerRelationToOwner();
+            MyRelationsBetweenPlayerAndBlock relation = block.GetPlayerRelationToOwner();
 
             if(relation == MyRelationsBetweenPlayerAndBlock.Enemies)
                 return false;
 
             if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != MyAPIGateway.Session.Player.IdentityId)
             {
-                var idModule = (block as MyCubeBlock).IDModule;
+                MyIDModule idModule = (block as MyCubeBlock).IDModule;
 
                 if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None)
                     return false;
@@ -1142,7 +1142,7 @@ namespace Digi.ControlModule
 
         private void Trigger(bool released = false)
         {
-            var timer = block as IMyTimerBlock;
+            IMyTimerBlock timer = block as IMyTimerBlock;
 
             if(timer != null)
             {
@@ -1156,21 +1156,21 @@ namespace Digi.ControlModule
                 {
                     if(runOnInput)
                     {
-                        var pb = (IMyProgrammableBlock)block;
+                        IMyProgrammableBlock pb = (IMyProgrammableBlock)block;
                         pb.Run(string.Empty);
                     }
                 }
                 else // but clients do need to send'em since PBs run server-side only
                 {
-                    var str = ControlModuleMod.Instance.str;
+                    StringBuilder str = ControlModuleMod.Instance.str;
                     str.Clear();
                     str.Append(block.EntityId);
 
-                    foreach(var kv in pressedList)
+                    foreach(KeyValuePair<string, object> kv in pressedList)
                     {
                         str.Append(DATA_SEPARATOR);
                         str.Append(kv.Key);
-                        var val = kv.Value;
+                        object val = kv.Value;
 
                         if(val != null)
                         {
@@ -1182,12 +1182,12 @@ namespace Digi.ControlModule
                             }
                             else if(val is Vector2)
                             {
-                                var v = (Vector2)val;
+                                Vector2 v = (Vector2)val;
                                 str.Append(v.X).Append(PACKET_VALUE_SEPARATOR).Append(v.Y);
                             }
                             else if(val is Vector3)
                             {
-                                var v = (Vector3)val;
+                                Vector3 v = (Vector3)val;
                                 str.Append(v.X).Append(PACKET_VALUE_SEPARATOR).Append(v.Y).Append(PACKET_VALUE_SEPARATOR).Append(v.Z);
                             }
                             else
@@ -1197,7 +1197,7 @@ namespace Digi.ControlModule
                         }
                     }
 
-                    var bytes = ControlModuleMod.Instance.Encode.GetBytes(str.ToString());
+                    byte[] bytes = ControlModuleMod.Instance.Encode.GetBytes(str.ToString());
                     MyAPIGateway.Multiplayer.SendMessageToServer(ControlModuleMod.MSG_INPUTS, bytes, true);
                 }
             }
@@ -1206,16 +1206,16 @@ namespace Digi.ControlModule
         private void UpdatePressed(bool released = false)
         {
             pressedList.Clear();
-            var objects = (readAllInputs ? InputHandler.inputValuesList : input.combination);
+            List<object> objects = (readAllInputs ? InputHandler.inputValuesList : input.combination);
 
             if(objects.Count == 0)
                 return;
 
-            foreach(var o in objects)
+            foreach(object o in objects)
             {
                 if(released)
                 {
-                    var text = o as string;
+                    string text = o as string;
 
                     if(text != null)
                     {
@@ -1276,7 +1276,7 @@ namespace Digi.ControlModule
                 }
                 else
                 {
-                    var text = o as string;
+                    string text = o as string;
 
                     switch(text)
                     {

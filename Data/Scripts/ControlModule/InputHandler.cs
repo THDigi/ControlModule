@@ -28,17 +28,17 @@ namespace Digi
 
         public string GetFriendlyString(bool xboxChars = true)
         {
-            var combined = new List<string>();
+            List<string> combined = new List<string>();
 
-            foreach(var o in combination)
+            foreach(object o in combination)
             {
                 if(o is MyStringId)
                 {
-                    var control = MyAPIGateway.Input.GetGameControl((MyStringId)o);
+                    IMyControl control = MyAPIGateway.Input.GetGameControl((MyStringId)o);
 
                     if(MyAPIGateway.Input.IsJoystickLastUsed && InputHandler.gamepadBindings.ContainsKey(control.GetGameControlEnum()))
                     {
-                        var gamepadInput = InputHandler.gamepadBindings[control.GetGameControlEnum()];
+                        object gamepadInput = InputHandler.gamepadBindings[control.GetGameControlEnum()];
 
                         if(xboxChars && InputHandler.xboxCodes.ContainsKey(o))
                             combined.Add(InputHandler.xboxCodes[o].ToString());
@@ -88,11 +88,11 @@ namespace Digi
             if(data.Length == 0)
                 return null;
 
-            var obj = new ControlCombination();
+            ControlCombination obj = new ControlCombination();
 
             for(int d = 0; d < data.Length; d++)
             {
-                var s = data[d].Trim();
+                string s = data[d].Trim();
 
                 if(s.Length == 0 || obj.raw.Contains(s))
                     continue;
@@ -405,12 +405,12 @@ namespace Digi
                 //{CONTROL_PREFIX+"secondarybuildaction", MyControlsSpace.SECONDARY_BUILD_ACTION},
             };
 
-            var inputsImmutableBuilder = ImmutableDictionary.CreateBuilder<string, Type>();
+            ImmutableDictionary<string, Type>.Builder inputsImmutableBuilder = ImmutableDictionary.CreateBuilder<string, Type>();
 
-            foreach(var kv in inputs)
+            foreach(KeyValuePair<string, object> kv in inputs)
             {
                 Type type = null;
-                var custom = kv.Value as string;
+                string custom = kv.Value as string;
 
                 if(custom != null)
                 {
@@ -449,7 +449,7 @@ namespace Digi
             inputNames = new Dictionary<object, string>();
             inputValuesList = new List<object>();
 
-            foreach(var kv in inputs)
+            foreach(KeyValuePair<string, object> kv in inputs)
             {
                 if(!inputNames.ContainsKey(kv.Value))
                 {
@@ -460,7 +460,7 @@ namespace Digi
 
             inputNiceNames = new Dictionary<string, string>();
 
-            foreach(var kv in inputs)
+            foreach(KeyValuePair<string, object> kv in inputs)
             {
                 inputNiceNames.Add(kv.Key, (kv.Value is MyKeys ? char.ToUpper(kv.Key[0]) + kv.Key.Substring(1) : char.ToUpper(kv.Key[2]) + kv.Key.Substring(3)));
             }
@@ -680,7 +680,7 @@ namespace Digi
 
         public static bool IsInputReadable()
         {
-            var GUI = MyAPIGateway.Gui;
+            VRage.Game.ModAPI.IMyGui GUI = MyAPIGateway.Gui;
             return !GUI.ChatEntryVisible && !GUI.IsCursorVisible;
         }
 
@@ -706,7 +706,7 @@ namespace Digi
             if(objects.Count == 0)
                 return false;
 
-            foreach(var o in objects)
+            foreach(object o in objects)
             {
                 if(o is MyKeys)
                 {
@@ -748,7 +748,7 @@ namespace Digi
                 }
                 else
                 {
-                    var text = o as string;
+                    string text = o as string;
 
                     switch(text) // no need to check justPressed from here
                     {
@@ -778,8 +778,8 @@ namespace Digi
                             break;
                         case InputHandler.GAMEPAD_PREFIX + "lsanalog":
                         {
-                            var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
-                            var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
+                            float x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
+                            float y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
 
                             if(any == (Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON))
                                 return any;
@@ -788,8 +788,8 @@ namespace Digi
                         }
                         case InputHandler.GAMEPAD_PREFIX + "rsanalog":
                         {
-                            var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
-                            var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
+                            float x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
+                            float y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
 
                             if(any == (Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON))
                                 return any;
@@ -806,42 +806,42 @@ namespace Digi
                             break;
                         case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
                         }
                         case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
                         }
                         case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
                         }
                         case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
                         }
                         case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
                         }
                         case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
                         {
-                            var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
+                            float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
                             if(any == (Math.Abs(v) > EPSILON))
                                 return any;
                             break;
@@ -908,7 +908,7 @@ namespace Digi
                 }
             }
 
-            var val = tmp.ToString();
+            string val = tmp.ToString();
             tmp.Clear();
             return val;
         }
@@ -922,13 +922,13 @@ namespace Digi
                 if(tmp.Length > 0)
                     tmp.Append(" or ");
 
-                var def = control.GetKeyboardControl().ToString();
+                string def = control.GetKeyboardControl().ToString();
                 tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetKeyboardControl(), def), def));
             }
 
             if(control.GetMouseControl() != MyMouseButtonsEnum.None)
             {
-                var def = control.GetMouseControl().ToString();
+                string def = control.GetMouseControl().ToString();
                 tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetMouseControl(), def), def));
             }
             else if(control.GetSecondKeyboardControl() != MyKeys.None)
@@ -936,18 +936,18 @@ namespace Digi
                 if(tmp.Length > 0)
                     tmp.Append(" or ");
 
-                var def = control.GetSecondKeyboardControl().ToString();
+                string def = control.GetSecondKeyboardControl().ToString();
                 tmp.Append(inputNiceNames.GetValueOrDefault(inputNames.GetValueOrDefault(control.GetSecondKeyboardControl(), def), def));
             }
 
-            var val = tmp.ToString();
+            string val = tmp.ToString();
             tmp.Clear();
             return val;
         }
 
         public static Vector3 GetFullRotation()
         {
-            var rotation = MyAPIGateway.Input.GetRotation();
+            Vector2 rotation = MyAPIGateway.Input.GetRotation();
             // HACK GetRotation() has inverted X and Y
             return new Vector3(rotation.Y, rotation.X, MyAPIGateway.Input.GetRoll());
         }
@@ -959,7 +959,7 @@ namespace Digi
 
             if(gamepadBindings.ContainsKey(control))
             {
-                var obj = gamepadBindings[control];
+                object obj = gamepadBindings[control];
 
                 if(obj is MyJoystickButtonsEnum)
                 {

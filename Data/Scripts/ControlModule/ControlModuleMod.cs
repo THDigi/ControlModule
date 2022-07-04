@@ -114,12 +114,12 @@ namespace Digi.ControlModule
                 if(!MyAPIGateway.Entities.EntityExists(entId))
                     return;
 
-                var pb = MyAPIGateway.Entities.GetEntityById(entId) as IMyProgrammableBlock;
+                IMyProgrammableBlock pb = MyAPIGateway.Entities.GetEntityById(entId) as IMyProgrammableBlock;
 
                 if(pb == null)
                     return;
 
-                var logic = pb.GameLogic.GetAs<ControlModule>();
+                ControlModule logic = pb.GameLogic.GetAs<ControlModule>();
 
                 if(logic == null)
                 {
@@ -133,12 +133,12 @@ namespace Digi.ControlModule
                 {
                     for(int i = 1; i < data.Length; i++)
                     {
-                        var kv = data[i].Split(ControlModule.PACKET_KEYVALUE_SEPARATOR_ARRAY);
+                        string[] kv = data[i].Split(ControlModule.PACKET_KEYVALUE_SEPARATOR_ARRAY);
                         object value = null;
 
                         if(kv.Length == 2)
                         {
-                            var values = kv[1].Split(ControlModule.PACKET_VALUE_SEPARATOR_ARRAY);
+                            string[] values = kv[1].Split(ControlModule.PACKET_VALUE_SEPARATOR_ARRAY);
 
                             switch(values.Length)
                             {
@@ -171,18 +171,18 @@ namespace Digi.ControlModule
 
         public static void CreateUIControls<TBlock>(List<IMyTerminalControl> redrawControls)
         {
-            var tc = MyAPIGateway.TerminalControls;
+            IMyTerminalControls tc = MyAPIGateway.TerminalControls;
 
             // the hidden inputs list property, accessible by PBs
             {
-                var p = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
+                IMyTerminalControlProperty<Dictionary<string, object>> p = tc.CreateProperty<Dictionary<string, object>, TBlock>(ID_PREFIX + "Inputs");
                 p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().pressedList;
                 p.Setter = (b, v) => { };
                 tc.AddControl<TBlock>(p);
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlSeparator, TBlock>(string.Empty);
+                IMyTerminalControlSeparator c = tc.CreateControl<IMyTerminalControlSeparator, TBlock>(string.Empty);
                 tc.AddControl<TBlock>(c);
             }
 
@@ -194,7 +194,7 @@ namespace Digi.ControlModule
             //}
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "AddInputCombobox");
+                IMyTerminalControlCombobox c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "AddInputCombobox");
                 c.Title = MyStringId.GetOrCompute("Control Module"); // acts as the section title, more compact than using a label
                 c.Tooltip = MyStringId.GetOrCompute("Click on an input from the list to add it to the inputs list below.");
                 c.SupportsMultipleBlocks = true;
@@ -206,13 +206,13 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "AddInput");
+                    IMyTerminalControlProperty<string> p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "AddInput");
                     p.Getter = (b) => "(no value)";
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().AddInput(v);
                     tc.AddControl<TBlock>(p);
                 }
                 {
-                    var p = tc.CreateProperty<ImmutableDictionary<string, Type>, TBlock>(ID_PREFIX + "AllPossibleInputs");
+                    IMyTerminalControlProperty<ImmutableDictionary<string, Type>> p = tc.CreateProperty<ImmutableDictionary<string, Type>, TBlock>(ID_PREFIX + "AllPossibleInputs");
                     p.Getter = (b) => InputHandler.inputsImmutable;
                     p.Setter = (b, v) => { };
                     tc.AddControl<TBlock>(p);
@@ -220,7 +220,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(TERMINAL_PREFIX + "MonitoredInputsListbox");
+                IMyTerminalControlListbox c = tc.CreateControl<IMyTerminalControlListbox, TBlock>(TERMINAL_PREFIX + "MonitoredInputsListbox");
                 c.Title = MyStringId.GetOrCompute("Monitored inputs");
                 // disabled because it blocks individual list items' tooltips
                 //c.Tooltip = MyStringId.GetOrCompute("The keys, buttons, game controls or analog values that will be monitored.");
@@ -234,7 +234,7 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<ImmutableArray<string>, TBlock>(ID_PREFIX + "MonitoredInputs");
+                    IMyTerminalControlProperty<ImmutableArray<string>> p = tc.CreateProperty<ImmutableArray<string>, TBlock>(ID_PREFIX + "MonitoredInputs");
                     p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().MonitoredInputs;
                     p.Setter = (b, v) => { };
                     tc.AddControl<TBlock>(p);
@@ -242,14 +242,14 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "RemoveSelectedButton");
+                IMyTerminalControlButton c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "RemoveSelectedButton");
                 c.Title = MyStringId.GetOrCompute("Remove selected");
                 c.Tooltip = MyStringId.GetOrCompute("Remove the selected inputs from the above list.\n" +
                                                     "\n" +
                                                     "Select multiple items in the list using shift+click");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    ControlModule l = b.GameLogic.GetAs<ControlModule>();
                     return (l.HasValidInput && l.selected != null && l.selected.Count > 0);
                 };
                 c.SupportsMultipleBlocks = true;
@@ -259,7 +259,7 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "RemoveInput");
+                    IMyTerminalControlProperty<string> p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "RemoveInput");
                     p.Getter = (b) => "(no value)";
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().RemoveInput(v);
                     tc.AddControl<TBlock>(p);
@@ -267,14 +267,14 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputCheckCombobox");
+                IMyTerminalControlCombobox c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputCheckCombobox");
                 c.Title = MyStringId.GetOrCompute("Multiple inputs check");
                 c.Tooltip = MyStringId.GetOrCompute("How to check the inputs before triggering.\n" +
                                                     "\n" +
                                                     "Only relevant if you have more than one input.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    ControlModule l = b.GameLogic.GetAs<ControlModule>();
                     return (l.input != null && l.input.combination.Count > 1);
                 };
                 c.SupportsMultipleBlocks = true;
@@ -286,7 +286,7 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputCheck");
+                    IMyTerminalControlProperty<int> p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputCheck");
                     p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputCheck;
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputCheck = v;
                     tc.AddControl<TBlock>(p);
@@ -294,7 +294,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputStateCombobox");
+                IMyTerminalControlCombobox c = tc.CreateControl<IMyTerminalControlCombobox, TBlock>(TERMINAL_PREFIX + "InputStateCombobox");
                 c.Title = MyStringId.GetOrCompute("Trigger on state");
                 c.Tooltip = MyStringId.GetOrCompute("The input states that will trigger this block.\n" +
                                                     "\n" +
@@ -309,7 +309,7 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputState");
+                    IMyTerminalControlProperty<int> p = tc.CreateProperty<int, TBlock>(ID_PREFIX + "InputState");
                     p.Getter = (b) => (int)b.GameLogic.GetAs<ControlModule>().InputState;
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().InputState = v;
                     tc.AddControl<TBlock>(p);
@@ -317,7 +317,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "HoldDelay");
+                IMyTerminalControlSlider c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "HoldDelay");
                 c.Title = MyStringId.GetOrCompute("Hold to trigger");
                 c.Tooltip = MyStringId.GetOrCompute("Will require user to hold the input(s) for this amount of time for the block to be triggered.\n" +
                                                     "\n" +
@@ -325,7 +325,7 @@ namespace Digi.ControlModule
                                                     "Requires a pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    ControlModule l = b.GameLogic.GetAs<ControlModule>();
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
@@ -338,7 +338,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "RepeatDelay");
+                IMyTerminalControlSlider c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "RepeatDelay");
                 c.Title = MyStringId.GetOrCompute("Repeat while any pressed");
                 c.Tooltip = MyStringId.GetOrCompute("Triggers the block on an interval as long as you hold the input(s) pressed.\n" +
                                                     "\n" +
@@ -347,7 +347,7 @@ namespace Digi.ControlModule
                                                     "Requires the pressed state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    ControlModule l = b.GameLogic.GetAs<ControlModule>();
                     return l.HasValidInput && l.inputState <= 1;
                 };
                 c.SupportsMultipleBlocks = true;
@@ -360,7 +360,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "ReleaseDelay");
+                IMyTerminalControlSlider c = tc.CreateControl<IMyTerminalControlSlider, TBlock>(ID_PREFIX + "ReleaseDelay");
                 c.Title = MyStringId.GetOrCompute("Delay release trigger");
                 c.Tooltip = MyStringId.GetOrCompute("This will delay the block triggering when you release the input.\n" +
                                                     "\n" +
@@ -369,7 +369,7 @@ namespace Digi.ControlModule
                                                     "Requires the released input state.");
                 c.Enabled = delegate (IMyTerminalBlock b)
                 {
-                    var l = b.GameLogic.GetAs<ControlModule>();
+                    ControlModule l = b.GameLogic.GetAs<ControlModule>();
                     return l.HasValidInput && l.inputState >= 1;
                 };
                 c.SupportsMultipleBlocks = true;
@@ -382,7 +382,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(TERMINAL_PREFIX + "CockpitFilterTextbox");
+                IMyTerminalControlTextbox c = tc.CreateControl<IMyTerminalControlTextbox, TBlock>(TERMINAL_PREFIX + "CockpitFilterTextbox");
                 c.Title = MyStringId.GetOrCompute("Partial cockpit name filter");
                 c.Tooltip = MyStringId.GetOrCompute("Only allow cockpits, seats or RC blocks that have this text in the name will be allowed to control this block.\n" +
                                                     "Leave blank to allow any cockpit, seat or RC block to control this block. (within ownership limits).\n" +
@@ -396,7 +396,7 @@ namespace Digi.ControlModule
 
                 // PB interface for this terminal control
                 {
-                    var p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
+                    IMyTerminalControlProperty<string> p = tc.CreateProperty<string, TBlock>(ID_PREFIX + "CockpitFilter");
                     p.Getter = (b) => b.GameLogic.GetAs<ControlModule>().FilterStr;
                     p.Setter = (b, v) => b.GameLogic.GetAs<ControlModule>().FilterStr = v;
                     tc.AddControl<TBlock>(p);
@@ -405,7 +405,7 @@ namespace Digi.ControlModule
 
             if(typeof(TBlock) == typeof(IMyProgrammableBlock))
             {
-                var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
+                IMyTerminalControlCheckbox c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "RunOnInput");
                 c.Title = MyStringId.GetOrCompute("Run on input");
                 c.Tooltip = MyStringId.GetOrCompute("Toggle if the PB is executed when inputs are registered.\n" +
                                                     "If unchecked it will still update the inputs dictionary but will not run PB.\n" +
@@ -419,7 +419,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "Debug");
+                IMyTerminalControlCheckbox c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "Debug");
                 c.Title = MyStringId.GetOrCompute("Show behavior on HUD");
                 c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" +
                                                     "Show HUD messages to cockpit pilots with the background behavior of the this block, when it triggers, when it waits, etc.\n" +
@@ -433,7 +433,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "MonitorInMenus");
+                IMyTerminalControlCheckbox c = tc.CreateControl<IMyTerminalControlCheckbox, TBlock>(ID_PREFIX + "MonitorInMenus");
                 c.Title = MyStringId.GetOrCompute("Monitor inputs in menus");
                 c.Tooltip = MyStringId.GetOrCompute("Debugging feature.\n" +
                                                     "If enabled, pressing the monitored inputs will also work while you're in any menu, except chat.\n" +
@@ -447,7 +447,7 @@ namespace Digi.ControlModule
             }
 
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "QuickIntroButton");
+                IMyTerminalControlButton c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TERMINAL_PREFIX + "QuickIntroButton");
                 c.Title = MyStringId.GetOrCompute("Quick Introduction");
                 c.Tooltip = MyStringId.GetOrCompute(ControlModuleMod.QUICK_INTRODUCTION_TEXT);
                 c.SupportsMultipleBlocks = true;
@@ -458,7 +458,7 @@ namespace Digi.ControlModule
 
             // TODO remove this button once settings are moved away from the name
             {
-                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(ID_PREFIX + "ClearSettings");
+                IMyTerminalControlButton c = tc.CreateControl<IMyTerminalControlButton, TBlock>(ID_PREFIX + "ClearSettings");
                 c.Title = MyStringId.GetOrCompute("Clear Settings");
                 c.Tooltip = MyStringId.GetOrCompute("Effectively resets all settings and clears the name.");
                 c.Enabled = (b) => !b.GameLogic.GetAs<ControlModule>().AreSettingsDefault();
@@ -549,13 +549,13 @@ namespace Digi.ControlModule
                     Value = MyStringId.GetOrCompute("Special: read all inputs"),
                 });
 
-                var str = Instance.str;
+                StringBuilder str = Instance.str;
 
                 for(int i = 0; i < InputHandler.inputValuesList.Count; i++)
                 {
-                    var val = InputHandler.inputValuesList[i];
-                    var key = InputHandler.inputNames[val];
-                    var niceName = InputHandler.inputNiceNames[key];
+                    object val = InputHandler.inputValuesList[i];
+                    string key = InputHandler.inputNames[val];
+                    string niceName = InputHandler.inputNiceNames[key];
                     str.Clear();
                     InputHandler.AppendNiceNamePrefix(key, val, str);
                     str.Append(niceName);
@@ -577,7 +577,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                var logic = block?.GameLogic?.GetAs<ControlModule>();
+                ControlModule logic = block?.GameLogic?.GetAs<ControlModule>();
                 CMTerminalOpen = (logic != null);
 
                 // TODO << use when RedrawControl() and UpdateVisual() work together
@@ -609,12 +609,12 @@ namespace Digi.ControlModule
                 if(showInputs)
                 {
                     const char separator = ' ';
-                    var keys = new StringBuilder("Keys: ");
-                    var mouse = new StringBuilder("Mouse: ");
-                    var gamepad = (MyAPIGateway.Input.IsJoystickConnected() ? new StringBuilder("Gamepad: ") : null);
-                    var controls = new StringBuilder("Controls: ");
+                    StringBuilder keys = new StringBuilder("Keys: ");
+                    StringBuilder mouse = new StringBuilder("Mouse: ");
+                    StringBuilder gamepad = (MyAPIGateway.Input.IsJoystickConnected() ? new StringBuilder("Gamepad: ") : null);
+                    StringBuilder controls = new StringBuilder("Controls: ");
 
-                    foreach(var kv in InputHandler.inputs)
+                    foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                     {
                         if(kv.Value is MyKeys)
                         {
@@ -649,7 +649,7 @@ namespace Digi.ControlModule
                         }
                         else
                         {
-                            var text = kv.Value as string;
+                            string text = kv.Value as string;
 
                             switch(text)
                             {
@@ -691,7 +691,7 @@ namespace Digi.ControlModule
                                     break;
                                 case InputHandler.CONTROL_PREFIX + "view":
                                 {
-                                    var view = InputHandler.GetFullRotation();
+                                    Vector3 view = InputHandler.GetFullRotation();
                                     if(view.LengthSquared() > 0)
                                     {
                                         controls.Append(text).Append('=');
@@ -703,7 +703,7 @@ namespace Digi.ControlModule
                                 break;
                                 case InputHandler.CONTROL_PREFIX + "movement":
                                 {
-                                    var movement = MyAPIGateway.Input.GetPositionDelta();
+                                    Vector3 movement = MyAPIGateway.Input.GetPositionDelta();
                                     if(movement.LengthSquared() > 0)
                                     {
                                         controls.Append(text).Append('=');
@@ -724,8 +724,8 @@ namespace Digi.ControlModule
                                     break;
                                 case InputHandler.GAMEPAD_PREFIX + "lsanalog":
                                 {
-                                    var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
-                                    var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
+                                    float x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Xpos);
+                                    float y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Yneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Ypos);
                                     if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
                                     {
                                         gamepad.Append(text).Append('=');
@@ -738,8 +738,8 @@ namespace Digi.ControlModule
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "rsanalog":
                                 {
-                                    var x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
-                                    var y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
+                                    float x = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationXpos);
+                                    float y = -MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYneg) + MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationYpos);
                                     if(Math.Abs(x) > EPSILON || Math.Abs(y) > EPSILON)
                                     {
                                         gamepad.Append(text).Append('=');
@@ -752,56 +752,56 @@ namespace Digi.ControlModule
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "ltanalog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zpos);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "rtanalog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Zneg);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "rotz+analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZpos);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "rotz-analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.RotationZneg);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "slider1+analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1pos);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "slider1-analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider1neg);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "slider2+analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2pos);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
                                 }
                                 case InputHandler.GAMEPAD_PREFIX + "slider2-analog":
                                 {
-                                    var v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
+                                    float v = MyAPIGateway.Input.GetJoystickAxisStateForGameplay(MyJoystickAxesEnum.Slider2neg);
                                     if(Math.Abs(v) > EPSILON)
                                         gamepad.Append(text).Append('=').Append(v).Append(separator);
                                     break;
@@ -829,15 +829,15 @@ namespace Digi.ControlModule
                 if(send && msg.StartsWith("/cm", StringComparison.OrdinalIgnoreCase))
                 {
                     send = false;
-                    var cmd = msg.Substring("/cm".Length).Trim().ToLower();
+                    string cmd = msg.Substring("/cm".Length).Trim().ToLower();
 
                     if(cmd.StartsWith("help", StringComparison.Ordinal))
                     {
-                        var help = new StringBuilder();
+                        StringBuilder help = new StringBuilder();
                         help.Append("Keyboard inputs:");
                         help.AppendLine().AppendLine();
 
-                        foreach(var kv in InputHandler.inputs)
+                        foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                         {
                             if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal)
                                || kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal)
@@ -852,7 +852,7 @@ namespace Digi.ControlModule
                         help.Append("Mouse inputs:");
                         help.AppendLine().AppendLine();
 
-                        foreach(var kv in InputHandler.inputs)
+                        foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                         {
                             if(kv.Key.StartsWith(InputHandler.MOUSE_PREFIX, StringComparison.Ordinal))
                             {
@@ -865,7 +865,7 @@ namespace Digi.ControlModule
                         help.Append("Gamepad inputs:");
                         help.AppendLine().AppendLine();
 
-                        foreach(var kv in InputHandler.inputs)
+                        foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                         {
                             if(kv.Key.StartsWith(InputHandler.GAMEPAD_PREFIX, StringComparison.Ordinal))
                             {
@@ -878,7 +878,7 @@ namespace Digi.ControlModule
                         help.Append("Game control inputs:");
                         help.AppendLine().AppendLine();
 
-                        foreach(var kv in InputHandler.inputs)
+                        foreach(KeyValuePair<string, object> kv in InputHandler.inputs)
                         {
                             if(kv.Key.StartsWith(InputHandler.CONTROL_PREFIX, StringComparison.Ordinal))
                             {
