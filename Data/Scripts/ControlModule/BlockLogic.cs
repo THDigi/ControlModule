@@ -1097,7 +1097,7 @@ namespace Digi.ControlModule
             {
                 LastControlledEntityId = controller.EntityId;
 
-                // prevent lingering notifications from confusing people
+                // prevent lingering notifications
                 ControlledNotification?.Hide();
             }
 
@@ -1109,21 +1109,9 @@ namespace Digi.ControlModule
             if(controller.CubeGrid.EntityId != block.CubeGrid.EntityId && !MyAPIGateway.GridGroups.HasConnection(controller.CubeGrid, block.CubeGrid, GridLinkTypeEnum.Mechanical))
                 return false;
 
-            #region check relation between local player and timer/PB
-            long localIdentityId = MyAPIGateway.Session.Player.IdentityId;
-
-            MyRelationsBetweenPlayerAndBlock relation = block.GetUserRelationToOwner(localIdentityId);
-
-            if(relation == MyRelationsBetweenPlayerAndBlock.Enemies)
+            // same check used by PB for GridTerminalSystem.
+            if(!controller.HasPlayerAccess(block.OwnerId))
                 return false;
-
-            if(relation != MyRelationsBetweenPlayerAndBlock.NoOwnership && block.OwnerId != localIdentityId)
-            {
-                MyIDModule idModule = (block as MyCubeBlock).IDModule;
-                if(idModule != null && idModule.ShareMode == MyOwnershipShareModeEnum.None)
-                    return false;
-            }
-            #endregion
 
             if(!string.IsNullOrEmpty(filter))
             {
