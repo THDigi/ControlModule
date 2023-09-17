@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SpaceEngineers.Game.ModAPI;
@@ -55,7 +53,6 @@ namespace Digi.ControlModule
         private long lastPressedTime = 0;
         private long lastReleaseTime = 0;
         private byte propertiesChanged = 0;
-        private string CleanBlockName = null;
 
         private bool NameIsMatching = false;
         private int NameRecheckAfterTick = 0;
@@ -68,7 +65,7 @@ namespace Digi.ControlModule
         public const byte PROPERTIES_CHANGED_TICKS = 15;
 
         public Dictionary<string, object> pressedList = new Dictionary<string, object>();
-        public List<MyTerminalControlListBoxItem> selected = null;
+        public readonly HashSet<string> Selected = new HashSet<string>();
 
         private const string TIMESPAN_FORMAT = @"mm\:ss\.f";
 
@@ -89,7 +86,7 @@ namespace Digi.ControlModule
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             block = (IMyTerminalBlock)Entity;
-            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME;
+            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
         }
 
         public void FirstUpdate()
@@ -402,6 +399,8 @@ namespace Digi.ControlModule
                     readAllInputs = false;
                 }
 
+                Selected.Clear();
+
                 UpdateMonitoredInputs();
 
                 if(propertiesChanged == 0)
@@ -419,7 +418,13 @@ namespace Digi.ControlModule
         {
             try
             {
-                selected = selectedList;
+                Selected.Clear();
+
+                foreach(MyTerminalControlListBoxItem item in selectedList)
+                {
+                    Selected.Add((string)item.UserData);
+                }
+
                 RefreshUI(TerminalControls.TerminalPropIdPrefix + "RemoveSelectedButton");
             }
             catch(Exception e)
@@ -432,28 +437,28 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(selected == null)
+                if(Selected.Count == 0)
                     return;
 
                 if(readAllInputs)
                 {
-                    if(selected.Count > 0)
+                    if(Selected.Count > 0)
                         readAllInputs = false;
                 }
                 else if(input != null)
                 {
                     List<string> inputList = input.raw;
 
-                    foreach(MyTerminalControlListBoxItem s in selected)
+                    foreach(string itemData in Selected)
                     {
-                        inputList.Remove(s.UserData as string);
+                        inputList.Remove(itemData);
                     }
 
                     input = (inputList.Count == 0 ? null : ControlCombination.CreateFrom(String.Join(" ", inputList)));
                 }
 
                 UpdateMonitoredInputs();
-                selected = null;
+                Selected.Clear();
 
                 if(propertiesChanged == 0)
                     propertiesChanged = PROPERTIES_CHANGED_TICKS;
@@ -466,7 +471,11 @@ namespace Digi.ControlModule
             }
         }
 
-        public void RefreshUI(string idRefresh = null)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="refreshOnlyThisId">if null it refreshes all controls from this mod</param>
+        public void RefreshUI(string refreshOnlyThisId = null)
         {
             try
             {
@@ -489,11 +498,11 @@ namespace Digi.ControlModule
                     //    continue;
                     //}
 
-                    if(idRefresh == null)
+                    if(refreshOnlyThisId == null)
                     {
                         c.UpdateVisual();
                     }
-                    else if(c.Id == idRefresh)
+                    else if(c.Id == refreshOnlyThisId)
                     {
                         c.UpdateVisual();
                         break;
@@ -521,11 +530,17 @@ namespace Digi.ControlModule
             try
             {
                 list.Clear();
+                selectedList.Clear();
 
                 if(readAllInputs)
                 {
-                    list.Add(new MyTerminalControlListBoxItem(MyStringId.GetOrCompute("(Reads all inputs)"), MyStringId.GetOrCompute("This reads all inputs.\n" +
-                                                                                                                                     "Use /cm help to see their internal names."), "all"));
+                    var item = new MyTerminalControlListBoxItem(MyStringId.GetOrCompute("(Reads all inputs)"), MyStringId.GetOrCompute("This reads all inputs.\n" +
+                                                                                                                                     "Use /cm help to see their internal names."), "all");
+
+                    list.Add(item);
+
+                    if(Selected.Contains((string)item.UserData))
+                        selectedList.Add(item);
                 }
                 else if(input != null)
                 {
@@ -645,19 +660,13 @@ namespace Digi.ControlModule
                             }
                         }
 
-                        list.Add(new MyTerminalControlListBoxItem(MyStringId.GetOrCompute(name), MyStringId.GetOrCompute(str.ToString()), key));
+                        var item = new MyTerminalControlListBoxItem(MyStringId.GetOrCompute(name), MyStringId.GetOrCompute(str.ToString()), key);
+
+                        list.Add(item);
+
+                        if(Selected.Contains((string)item.UserData))
+                            selectedList.Add(item);
                     }
-                }
-
-                //if(selected != null && selectedList != null)
-                //{
-                //    selectedList.Clear();
-                //    selectedList.AddList(selected);
-                //}
-
-                if(selected != null) // HACK workaround for the list not selecting selected stuff
-                {
-                    selected.Clear();
                 }
             }
             catch(Exception e)
@@ -713,9 +722,26 @@ namespace Digi.ControlModule
             runOnInput = true;
             debug = false;
             monitorInMenus = false;
-            CleanBlockName = null;
 
             UpdateMonitoredInputs();
+        }
+
+        public override void UpdateAfterSimulation100()
+        {
+            try
+            {
+                string customData = block.CustomData; // it's a dictionary lookup which is why reference check can work
+                if(!object.ReferenceEquals(customData, PreviousCustomDataParse))
+                {
+                    PreviousCustomDataParse = customData;
+                    LoadSettings();
+                    RefreshUI();
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
 
         public override void UpdateBeforeSimulation()
@@ -861,7 +887,7 @@ namespace Digi.ControlModule
         private void DebugPrint(string message, int timeMs = 500, string font = MyFontEnum.White)
         {
             if(debug)
-                MyAPIGateway.Utilities.ShowNotification(CleanBlockName + ": " + message, timeMs, font);
+                MyAPIGateway.Utilities.ShowNotification(block.CustomName + ": " + message, timeMs, font);
         }
 
         private bool CheckBlocks()
@@ -930,7 +956,7 @@ namespace Digi.ControlModule
 
                 StringBuilder sb = ControlModuleMod.Instance.TempSB.Clear();
 
-                sb.Append("ControlModule [").Append(CleanBlockName).Append("] activated. ");
+                sb.Append("ControlModule [").Append(block.CustomName).Append("] activated. ");
 
                 if(input != null && input.raw.Count > 0)
                 {
@@ -1210,19 +1236,17 @@ namespace Digi.ControlModule
 
             ReadLegacySettings(); // check and load block name for old setting format.
 
-            string customData = block.CustomData; // it's a dictionary lookup which is why reference check can work
-            if(object.ReferenceEquals(customData, PreviousCustomDataParse))
-                return;
+            string customData = block.CustomData;
             PreviousCustomDataParse = customData;
 
             if(!MyIni.HasSection(customData, IniSection))
                 return; // required because ini.TryParse() requires the section if specified
 
-            // HACK: no longer using TryParse(customdata, section, out...) because it fails if `---` is in the section.
+            // HACK: no longer using TryParse(customdata, section, out...) because it fails if the divider (---) is in the section.
             MyIniParseResult result;
             if(!IniParser.TryParse(customData, out result))
             {
-                Log.Error($"Failed to parse CustomData on '{block.CustomName}': Line #{result.LineNo.ToString()}: {result.Error}");
+                Log.Error($"Failed to read CustomData on '{block.CustomName}': Line #{result.LineNo.ToString()}: {result.Error}");
                 return;
             }
 
@@ -1245,7 +1269,11 @@ namespace Digi.ControlModule
 
             debug = IniParser.Get(IniSection, "Debug").ToBoolean(debug);
             monitorInMenus = IniParser.Get(IniSection, "InMenus").ToBoolean(monitorInMenus);
-            runOnInput = IniParser.Get(IniSection, "Run").ToBoolean(runOnInput);
+
+            if(block is IMyProgrammableBlock)
+                runOnInput = IniParser.Get(IniSection, "Run").ToBoolean(runOnInput);
+            else
+                runOnInput = true;
         }
 
         void SaveSettings()
@@ -1276,10 +1304,14 @@ namespace Digi.ControlModule
 
                 IniParser.Set(IniSection, "Debug", debug);
                 IniParser.Set(IniSection, "InMenus", monitorInMenus);
-                IniParser.Set(IniSection, "Run", runOnInput);
+
+                if(block is IMyProgrammableBlock)
+                    IniParser.Set(IniSection, "Run", runOnInput);
             }
 
-            block.CustomData = IniParser.ToString();
+            string ini = IniParser.ToString();
+            block.CustomData = ini;
+            PreviousCustomDataParse = ini;
         }
 
         /// <summary>
@@ -1426,10 +1458,10 @@ namespace Digi.ControlModule
                     }
                 }
 
+                /*
                 //if(debug)
                 CleanBlockName = GetNameNoSettings();
 
-                /*
                 // HACK used to indicate if there are new lines in the name to sanitize it because PB has some issues with that
                 name = block.CustomName;
                 if(name.Contains('\n') || name.Contains('\r') || name.Contains('\t'))
@@ -1441,7 +1473,7 @@ namespace Digi.ControlModule
                 }
                 */
 
-                block.CustomName = CleanBlockName;
+                block.CustomName = GetNameNoSettings();
                 return true;
             }
             catch(Exception e)

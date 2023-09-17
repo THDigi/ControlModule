@@ -25,7 +25,7 @@ namespace Digi.ControlModule
             "\n" +
             "Pressing this button opens this mod's workshop page where you can find the full guide.";
 
-        public static void CreateUIControls<TBlock>(List<IMyTerminalControl> redrawControls)
+        public static void CreateUIControls<TBlock>(List<IMyTerminalControl> redrawControls) where TBlock : class, IMyFunctionalBlock
         {
             if(redrawControls.Count > 0)
                 return; // only add once per type of block
@@ -106,10 +106,10 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("Remove the selected inputs from the above list.\n" +
                                                     "\n" +
                                                     "Select multiple items in the list using shift+click");
-                c.Enabled = delegate (IMyTerminalBlock b)
+                c.Enabled = (b) =>
                 {
                     ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
-                    return l != null && l.HasValidInput && l.selected != null && l.selected.Count > 0;
+                    return l != null && l.HasValidInput && l.Selected != null && l.Selected.Count > 0;
                 };
                 c.SupportsMultipleBlocks = true;
                 c.Action = (b) => b?.GameLogic?.GetAs<ControlModule>()?.RemoveSelected();
@@ -131,7 +131,7 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("How to check the inputs before triggering.\n" +
                                                     "\n" +
                                                     "Only relevant if you have more than one input.");
-                c.Enabled = delegate (IMyTerminalBlock b)
+                c.Enabled = (b) =>
                 {
                     ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
                     return (l?.input?.combination != null && l.input.combination.Count > 1);
@@ -187,7 +187,7 @@ namespace Digi.ControlModule
                     p.Getter = (b) => (int)(b?.GameLogic?.GetAs<ControlModule>()?.InputState ?? 0);
                     p.Setter = (b, v) =>
                     {
-                        var l = b?.GameLogic?.GetAs<ControlModule>();
+                        ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
                         if(l != null)
                             l.InputState = v;
                     };
