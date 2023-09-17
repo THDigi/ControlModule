@@ -133,6 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockLogic.cs" />
+    <Compile Include="TerminalControls.cs" />
     <Compile Include="ControlModuleMod.cs" />
     <Compile Include="InputHandler.cs" />
     <Compile Include="Log.cs" />

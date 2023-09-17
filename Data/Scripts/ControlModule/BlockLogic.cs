@@ -90,15 +90,9 @@ namespace Digi.ControlModule
         {
             // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
-            {
-                if(ControlModuleMod.Instance.RedrawControlsTimer.Count == 0)
-                    ControlModuleMod.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
-            }
+                TerminalControls.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
             else
-            {
-                if(ControlModuleMod.Instance.RedrawControlsPB.Count == 0)
-                    ControlModuleMod.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
-            }
+                TerminalControls.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
 
             if(block.CubeGrid?.Physics == null)
             {
@@ -421,7 +415,7 @@ namespace Digi.ControlModule
             try
             {
                 selected = selectedList;
-                RefreshUI(ControlModuleMod.TERMINAL_PREFIX + "RemoveSelectedButton");
+                RefreshUI(TerminalControls.TerminalPropIdPrefix + "RemoveSelectedButton");
             }
             catch(Exception e)
             {
@@ -532,7 +526,7 @@ namespace Digi.ControlModule
                 {
                     List<string> assigned = new List<string>();
 
-                    StringBuilder str = ControlModuleMod.Instance.str;
+                    StringBuilder str = ControlModuleMod.Instance.TempSB;
 
                     foreach(object obj in input.combination)
                     {
@@ -705,7 +699,7 @@ namespace Digi.ControlModule
                     return;
 
                 string[] data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
-                StringBuilder str = ControlModuleMod.Instance.str;
+                StringBuilder str = ControlModuleMod.Instance.TempSB;
 
                 foreach(string d in data)
                 {
@@ -830,7 +824,7 @@ namespace Digi.ControlModule
                 return;
             }
 
-            StringBuilder str = ControlModuleMod.Instance.str;
+            StringBuilder str = ControlModuleMod.Instance.TempSB;
             str.Clear();
             str.Append(trimmedName);
             str.Append(' ', 3);
@@ -1131,7 +1125,7 @@ namespace Digi.ControlModule
                 if(ControlledNotification == null)
                     ControlledNotification = MyAPIGateway.Utilities.CreateNotification("", 3000, MyFontEnum.Debug);
 
-                StringBuilder sb = ControlModuleMod.Instance.str.Clear();
+                StringBuilder sb = ControlModuleMod.Instance.TempSB.Clear();
 
                 sb.Append("ControlModule [").Append(CleanBlockName).Append("] activated. ");
 
@@ -1207,7 +1201,7 @@ namespace Digi.ControlModule
                 }
                 else // but clients do need to send'em since PBs run server-side only
                 {
-                    StringBuilder str = ControlModuleMod.Instance.str;
+                    StringBuilder str = ControlModuleMod.Instance.TempSB;
                     str.Clear();
                     str.Append(block.EntityId);
 
