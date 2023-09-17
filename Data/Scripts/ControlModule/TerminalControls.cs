@@ -380,18 +380,6 @@ namespace Digi.ControlModule
                 tc.AddControl<TBlock>(c);
                 //redrawControls.Add(c);
             }
-
-            // TODO remove this button once settings are moved away from the name
-            {
-                IMyTerminalControlButton c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TerminalPropIdPrefix + "ClearSettings");
-                c.Title = MyStringId.GetOrCompute("Clear Settings");
-                c.Tooltip = MyStringId.GetOrCompute("Effectively resets all settings and clears the name.");
-                c.Enabled = (b) => (!b?.GameLogic?.GetAs<ControlModule>()?.AreSettingsDefault()) ?? false;
-                c.SupportsMultipleBlocks = true;
-                c.Action = (b) => b?.GameLogic?.GetAs<ControlModule>()?.ResetNameAndSettings();
-                tc.AddControl<TBlock>(c);
-                redrawControls.Add(c);
-            }
         }
 
         static void TerminalSliderFormat(IMyTerminalBlock b, StringBuilder s, float v)

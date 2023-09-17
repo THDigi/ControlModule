@@ -12,6 +12,7 @@ using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Input;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -29,6 +30,11 @@ namespace Digi.ControlModule
     public class ControlModule : MyGameLogicComponent
     {
         public IMyTerminalBlock block;
+
+        public const string IniSection = "ControlModuleMod";
+        MyIni IniParser = new MyIni();
+        string PreviousCustomDataParse;
+
         public ControlCombination input = null;
         public bool readAllInputs = false;
         public ImmutableArray<string> MonitoredInputs;
@@ -100,8 +106,8 @@ namespace Digi.ControlModule
                 return;
             }
 
-            block.CustomNameChanged += NameChanged;
-            NameChanged(block);
+            LoadSettings();
+            SaveSettings();
 
             // if it has inputs and is PB, fill in the pressedList dictionary ASAP, fixes PB getting dictionary exceptions on load
             if(MyAPIGateway.Multiplayer.IsServer && block is IMyProgrammableBlock && (readAllInputs || input != null))
@@ -112,7 +118,6 @@ namespace Digi.ControlModule
         {
             try
             {
-                block.CustomNameChanged -= NameChanged;
             }
             catch(Exception e)
             {
@@ -680,98 +685,6 @@ namespace Digi.ControlModule
             return null;
         }
 
-        public void NameChanged(IMyTerminalBlock block)
-        {
-            try
-            {
-                ResetSettings(); // first reset fields
-
-                string name = block.CustomName.ToLower();
-                int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
-
-                if(startIndex == -1)
-                    return;
-
-                startIndex += DATA_TAG_START.Length;
-                int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
-
-                if(endIndex == -1)
-                    return;
-
-                string[] data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
-                StringBuilder str = ControlModuleMod.Instance.TempSB;
-
-                foreach(string d in data)
-                {
-                    string[] kv = d.Split(DATA_KEYVALUE_SEPARATOR_ARRAY);
-                    string key = kv[0].Trim();
-                    string value = kv[1].Trim();
-
-                    switch(key)
-                    {
-                        case "input":
-                            if(value != "none")
-                            {
-                                readAllInputs = (value == "all");
-
-                                if(!readAllInputs)
-                                    input = ControlCombination.CreateFrom(value);
-                            }
-                            break;
-                        case "state":
-                            inputState = byte.Parse(value);
-                            break;
-                        case "check":
-                            inputCheck = byte.Parse(value);
-                            break;
-                        case "hold":
-                            holdDelayTrigger = Math.Round(double.Parse(value), 3);
-                            break;
-                        case "repeat":
-                            repeatDelayTrigger = Math.Round(double.Parse(value), 3);
-                            break;
-                        case "release":
-                            releaseDelayTrigger = Math.Round(double.Parse(value), 3);
-                            break;
-                        case "filter":
-                            str.Clear();
-                            str.Append(value);
-                            SetFilter(str);
-                            break;
-                        case "debug":
-                            debug = (value == "1");
-                            break;
-                        case "monitorinmenus":
-                            monitorInMenus = (value == "1");
-                            break;
-                        case "run":
-                            runOnInput = (value == "1");
-                            break;
-                        default:
-                            Log.Error($"Unknown key in name: '{key}', data raw: '{block.CustomName}'");
-                            break;
-                    }
-                }
-
-                //if(debug)
-                CleanBlockName = GetNameNoData();
-
-                // HACK used to indicate if there are new lines in the name to sanitize it because PB has some issues with that
-                name = block.CustomName;
-                if(name.Contains('\n') || name.Contains('\r') || name.Contains('\t'))
-                {
-                    name = name.Replace('\n', ' ');
-                    name = name.Replace('\r', ' ');
-                    name = name.Replace('\t', ' ');
-                    block.CustomName = name;
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
-
         public bool AreSettingsDefault()
         {
             return !(input != null
@@ -805,116 +718,6 @@ namespace Digi.ControlModule
             UpdateMonitoredInputs();
         }
 
-        public void ResetNameAndSettings()
-        {
-            ResetSettings();
-            block.CustomName = GetNameNoData();
-            RefreshUI();
-        }
-
-        private void SaveToName(string forceName = null)
-        {
-            string trimmedName = (forceName ?? GetNameNoData());
-
-            if(AreSettingsDefault())
-            {
-                if(block.CustomName.Length != trimmedName.Length)
-                    block.CustomName = trimmedName;
-
-                return;
-            }
-
-            StringBuilder str = ControlModuleMod.Instance.TempSB;
-            str.Clear();
-            str.Append(trimmedName);
-            str.Append(' ', 3);
-            str.Append(DATA_TAG_START);
-
-            if(input != null || readAllInputs)
-            {
-                str.Append("input").Append(DATA_KEYVALUE_SEPARATOR).Append(readAllInputs ? "all" : input.combinationString);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(inputState > 0)
-            {
-                str.Append("state").Append(DATA_KEYVALUE_SEPARATOR).Append(inputState);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(inputCheck > 0)
-            {
-                str.Append("check").Append(DATA_KEYVALUE_SEPARATOR).Append(inputCheck);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(holdDelayTrigger >= 0.016)
-            {
-                str.Append("hold").Append(DATA_KEYVALUE_SEPARATOR).Append(holdDelayTrigger);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(repeatDelayTrigger >= 0.016)
-            {
-                str.Append("repeat").Append(DATA_KEYVALUE_SEPARATOR).Append(repeatDelayTrigger);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(releaseDelayTrigger >= 0.016)
-            {
-                str.Append("release").Append(DATA_KEYVALUE_SEPARATOR).Append(releaseDelayTrigger);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(!string.IsNullOrEmpty(filter))
-            {
-                str.Append("filter").Append(DATA_KEYVALUE_SEPARATOR).Append(filter);
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(debug)
-            {
-                str.Append("debug").Append(DATA_KEYVALUE_SEPARATOR).Append("1");
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(monitorInMenus)
-            {
-                str.Append("monitorinmenus").Append(DATA_KEYVALUE_SEPARATOR).Append("1");
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(!runOnInput)
-            {
-                str.Append("run").Append(DATA_KEYVALUE_SEPARATOR).Append("0");
-                str.Append(DATA_SEPARATOR);
-            }
-
-            if(str[str.Length - 1] == DATA_SEPARATOR) // remove the last DATA_SEPARATOR character
-                str.Length -= 1;
-
-            str.Append(DATA_TAG_END);
-
-            block.CustomName = str.ToString();
-        }
-
-        private string GetNameNoData()
-        {
-            string name = block.CustomName;
-            int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
-
-            if(startIndex == -1)
-                return name;
-
-            string nameNoData = name.Substring(0, startIndex);
-            int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
-
-            if(endIndex == -1)
-                return nameNoData.Trim();
-            else
-                return (nameNoData + name.Substring(endIndex + 1)).Trim();
-        }
-
         public override void UpdateBeforeSimulation()
         {
             try
@@ -927,7 +730,7 @@ namespace Digi.ControlModule
 
                 if(propertiesChanged > 0 && --propertiesChanged <= 0)
                 {
-                    SaveToName();
+                    SaveSettings();
                 }
 
                 if(input == null && !readAllInputs)
@@ -1399,6 +1202,254 @@ namespace Digi.ControlModule
                     }
                 }
             }
+        }
+
+        void LoadSettings()
+        {
+            ResetSettings(); // first reset fields
+
+            ReadLegacySettings(); // check and load block name for old setting format.
+
+            string customData = block.CustomData; // it's a dictionary lookup which is why reference check can work
+            if(object.ReferenceEquals(customData, PreviousCustomDataParse))
+                return;
+            PreviousCustomDataParse = customData;
+
+            if(!MyIni.HasSection(customData, IniSection))
+                return; // required because ini.TryParse() requires the section if specified
+
+            // HACK: no longer using TryParse(customdata, section, out...) because it fails if `---` is in the section.
+            MyIniParseResult result;
+            if(!IniParser.TryParse(customData, out result))
+            {
+                Log.Error($"Failed to parse CustomData on '{block.CustomName}': Line #{result.LineNo.ToString()}: {result.Error}");
+                return;
+            }
+
+            string inputRaw = IniParser.Get(IniSection, "Input").ToString(null);
+            if(!string.IsNullOrWhiteSpace(inputRaw))
+            {
+                readAllInputs = (inputRaw == "all");
+                if(!readAllInputs)
+                    input = ControlCombination.CreateFrom(inputRaw);
+            }
+
+            inputState = (byte)IniParser.Get(IniSection, "State").ToInt32(inputState);
+            inputCheck = (byte)IniParser.Get(IniSection, "Check").ToInt32(inputCheck);
+
+            holdDelayTrigger = IniParser.Get(IniSection, "Hold").ToDouble(holdDelayTrigger);
+            repeatDelayTrigger = IniParser.Get(IniSection, "Repeat").ToDouble(repeatDelayTrigger);
+            releaseDelayTrigger = IniParser.Get(IniSection, "Release").ToDouble(releaseDelayTrigger);
+
+            filter = IniParser.Get(IniSection, "Filter").ToString(filter);
+
+            debug = IniParser.Get(IniSection, "Debug").ToBoolean(debug);
+            monitorInMenus = IniParser.Get(IniSection, "InMenus").ToBoolean(monitorInMenus);
+            runOnInput = IniParser.Get(IniSection, "Run").ToBoolean(runOnInput);
+        }
+
+        void SaveSettings()
+        {
+            string reason = ParseCustomData(block.CustomData, IniParser);
+            if(reason != null)
+            {
+                Log.Error($"Failed to save settings on '{block.CustomName}': {reason}");
+                return;
+            }
+
+            if(!readAllInputs && input == null)
+            {
+                IniParser.DeleteSection(IniSection);
+            }
+            else
+            {
+                IniParser.Set(IniSection, "Input", readAllInputs ? "all" : input.combinationString);
+
+                IniParser.Set(IniSection, "State", inputState);
+                IniParser.Set(IniSection, "Check", inputCheck);
+
+                IniParser.Set(IniSection, "Hold", holdDelayTrigger);
+                IniParser.Set(IniSection, "Repeat", repeatDelayTrigger);
+                IniParser.Set(IniSection, "Release", releaseDelayTrigger);
+
+                IniParser.Set(IniSection, "Filter", filter);
+
+                IniParser.Set(IniSection, "Debug", debug);
+                IniParser.Set(IniSection, "InMenus", monitorInMenus);
+                IniParser.Set(IniSection, "Run", runOnInput);
+            }
+
+            block.CustomData = IniParser.ToString();
+        }
+
+        /// <summary>
+        /// Parses customdata for Ini support, failing to parse attempts to parse again with divider (---).
+        /// Returns null if succeeded, or fail reason if not
+        /// </summary>
+        static string ParseCustomData(string customData, MyIni iniParser)
+        {
+            const string IniDivider = "---"; // this is hardcoded in MyIni, do not change
+
+            iniParser.Clear();
+
+            // determine if a valid divider exists, same way MyIni.FindSection() does it
+            bool hasDivider = false;
+            TextPtr ptr = new TextPtr(customData);
+            while(!ptr.IsOutOfBounds())
+            {
+                ptr = ptr.Find("\n");
+                ++ptr;
+                if(ptr.Char == '[')
+                {
+                    // don't care
+                }
+                else if(ptr.StartsWith(IniDivider))
+                {
+                    ptr = (ptr + IniDivider.Length).SkipWhitespace();
+                    if(ptr.IsEndOfLine())
+                    {
+                        hasDivider = true;
+                        break;
+                    }
+                }
+            }
+
+            // need to parse the entire thing
+            MyIniParseResult result;
+            if(!iniParser.TryParse(customData, out result))
+            {
+                if(hasDivider)
+                {
+                    return $"failed to parse CustomData (before {IniDivider} divider)";
+                }
+                else
+                {
+                    // assume the current customdata is not ini and try again with divider
+                    customData = IniDivider + "\n" + customData;
+                    if(!iniParser.TryParse(customData, out result))
+                    {
+                        return $"failed to parse CustomData even with adding {IniDivider} before existing text!";
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        string GetNameNoSettings()
+        {
+            string name = block.CustomName;
+            int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
+
+            if(startIndex == -1)
+                return name;
+
+            string nameNoData = name.Substring(0, startIndex);
+            int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
+
+            if(endIndex == -1)
+                return nameNoData.Trim();
+            else
+                return (nameNoData + name.Substring(endIndex + 1)).Trim();
+        }
+
+        bool ReadLegacySettings()
+        {
+            try
+            {
+                //ResetSettings(); // first reset fields
+
+                string name = block.CustomName.ToLower();
+                int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
+
+                if(startIndex == -1)
+                    return false;
+
+                startIndex += DATA_TAG_START.Length;
+                int endIndex = name.IndexOf(DATA_TAG_END, startIndex);
+
+                if(endIndex == -1)
+                    return false;
+
+                string[] data = name.Substring(startIndex, (endIndex - startIndex)).Split(DATA_SEPARATOR_ARRAY);
+                StringBuilder str = ControlModuleMod.Instance.TempSB;
+
+                foreach(string d in data)
+                {
+                    string[] kv = d.Split(DATA_KEYVALUE_SEPARATOR_ARRAY);
+                    string key = kv[0].Trim();
+                    string value = kv[1].Trim();
+
+                    switch(key)
+                    {
+                        case "input":
+                            if(value != "none")
+                            {
+                                readAllInputs = (value == "all");
+
+                                if(!readAllInputs)
+                                    input = ControlCombination.CreateFrom(value);
+                            }
+                            break;
+                        case "state":
+                            inputState = byte.Parse(value);
+                            break;
+                        case "check":
+                            inputCheck = byte.Parse(value);
+                            break;
+                        case "hold":
+                            holdDelayTrigger = Math.Round(double.Parse(value), 3);
+                            break;
+                        case "repeat":
+                            repeatDelayTrigger = Math.Round(double.Parse(value), 3);
+                            break;
+                        case "release":
+                            releaseDelayTrigger = Math.Round(double.Parse(value), 3);
+                            break;
+                        case "filter":
+                            str.Clear();
+                            str.Append(value);
+                            SetFilter(str);
+                            break;
+                        case "debug":
+                            debug = (value == "1");
+                            break;
+                        case "monitorinmenus":
+                            monitorInMenus = (value == "1");
+                            break;
+                        case "run":
+                            runOnInput = (value == "1");
+                            break;
+                        default:
+                            Log.Error($"Unknown key in name: '{key}', data raw: '{block.CustomName}'");
+                            break;
+                    }
+                }
+
+                //if(debug)
+                CleanBlockName = GetNameNoSettings();
+
+                /*
+                // HACK used to indicate if there are new lines in the name to sanitize it because PB has some issues with that
+                name = block.CustomName;
+                if(name.Contains('\n') || name.Contains('\r') || name.Contains('\t'))
+                {
+                    name = name.Replace('\n', ' ');
+                    name = name.Replace('\r', ' ');
+                    name = name.Replace('\t', ' ');
+                    block.CustomName = name;
+                }
+                */
+
+                block.CustomName = CleanBlockName;
+                return true;
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
+
+            return false;
         }
     }
 }
