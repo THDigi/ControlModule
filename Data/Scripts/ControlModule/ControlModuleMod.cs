@@ -6,6 +6,7 @@ using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.Utils;
 using VRageMath;
@@ -24,7 +25,8 @@ namespace Digi.ControlModule
         private bool init;
         private bool showInputs = false;
 
-        public bool CMTerminalOpen = false; // used to know if the last viewed block in terminal was a control module; NOTE: doesn't get set to false when terminal is closed
+        bool LastViewedWasCM;
+        public static bool IsAnyViewedInTerminal => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && ControlModuleMod.Instance.LastViewedWasCM;
 
         public readonly List<IMyTerminalControl> RedrawControlsTimer = new List<IMyTerminalControl>();
         public readonly List<IMyTerminalControl> RedrawControlsPB = new List<IMyTerminalControl>();
@@ -159,20 +161,43 @@ namespace Digi.ControlModule
             try
             {
                 ControlModule logic = block?.GameLogic?.GetAs<ControlModule>();
-                CMTerminalOpen = (logic != null);
+                LastViewedWasCM = logic != null;
 
-                // TODO << use when RedrawControl() and UpdateVisual() work together
-                //if(logic != null)
-                //{
-                //    foreach(var c in controls)
-                //    {
-                //        if(c.Id == UI_INPUTSLIST_ID)
-                //        {
-                //            logic.UpdateInputListUI(c);
-                //            break;
-                //        }
-                //    }
-                //}
+                if(logic != null)
+                {
+                    // TODO << use when RedrawControl() and UpdateVisual() work together
+                    //foreach(var c in controls)
+                    //{
+                    //    if(c.Id == UI_INPUTSLIST_ID)
+                    //    {
+                    //        logic.UpdateInputListUI(c);
+                    //        break;
+                    //    }
+                    //}
+
+                    const string ErrorsId = TerminalControls.TerminalPropIdPrefix + "Errors";
+
+                    for(int i = 0; i < controls.Count; i++)
+                    {
+                        var button = controls[i] as IMyTerminalControlButton;
+                        if(button != null && button.Id == ErrorsId)
+                        {
+                            if(logic.CustomDataFailReason != null)
+                            {
+                                button.Tooltip = MyStringId.GetOrCompute($"The error: {logic.CustomDataFailReason}"
+                                                + "\n\nThis only means that this particular block cannot use ControlModule until its CustomData is either empty or an ini format."
+                                                + "\nAnything non-ini can be after --- separator (which this mod already attempted to put behind).");
+                            }
+                            else
+                            {
+                                button.Tooltip = MyStringId.NullOrEmpty;
+                            }
+
+                            button.RedrawControl();
+                            break;
+                        }
+                    }
+                }
             }
             catch(Exception e)
             {

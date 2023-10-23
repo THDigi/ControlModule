@@ -58,6 +58,11 @@ namespace Digi.ControlModule
                 c.Tooltip = MyStringId.GetOrCompute("Click on an input from the list to add it to the inputs list below.");
                 c.SupportsMultipleBlocks = true;
                 c.ComboBoxContent = InputsDDList;
+                c.Enabled = (b) =>
+                {
+                    ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
+                    return l != null && l.CustomDataFailReason == null;
+                };
                 c.Getter = (b) => 0;
                 c.Setter = (b, v) => b?.GameLogic?.GetAs<ControlModule>()?.AddInput((int)v - 2);
                 tc.AddControl<TBlock>(c);
@@ -76,6 +81,21 @@ namespace Digi.ControlModule
                     p.Setter = (b, v) => { };
                     tc.AddControl<TBlock>(p);
                 }
+            }
+
+            {
+                var c = tc.CreateControl<IMyTerminalControlButton, TBlock>(TerminalPropIdPrefix + "Errors");
+                c.Title = MyStringId.GetOrCompute("Errors!");
+                c.Tooltip = MyStringId.GetOrCompute("Unknown error (failed to override this tooltip)");
+                c.SupportsMultipleBlocks = true;
+                c.Visible = (b) =>
+                {
+                    ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
+                    return l != null && l.CustomDataFailReason != null;
+                };
+                c.Action = (b) => { };
+                tc.AddControl<TBlock>(c);
+                redrawControls.Add(c);
             }
 
             {

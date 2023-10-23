@@ -32,6 +32,7 @@ namespace Digi.ControlModule
         public const string IniSection = "ControlModuleMod";
         MyIni IniParser = new MyIni();
         string PreviousCustomDataParse;
+        public string CustomDataFailReason;
 
         public ControlCombination input = null;
         public bool readAllInputs = false;
@@ -104,7 +105,7 @@ namespace Digi.ControlModule
             }
 
             LoadSettings();
-            SaveSettings();
+            //SaveSettings();
 
             // if it has inputs and is PB, fill in the pressedList dictionary ASAP, fixes PB getting dictionary exceptions on load
             if(MyAPIGateway.Multiplayer.IsServer && block is IMyProgrammableBlock && (readAllInputs || input != null))
@@ -479,7 +480,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(MyAPIGateway.Gui.GetCurrentScreen != MyTerminalPageEnum.ControlPanel || !ControlModuleMod.Instance.CMTerminalOpen)
+                if(ControlModuleMod.IsAnyViewedInTerminal)
                     return; // only refresh if we're looking at the controls
 
                 List<IMyTerminalControl> controls;
@@ -756,7 +757,10 @@ namespace Digi.ControlModule
 
                 if(propertiesChanged > 0 && --propertiesChanged <= 0)
                 {
-                    SaveSettings();
+                    if(!SaveSettings())
+                    {
+                        ResetSettings();
+                    }
                 }
 
                 if(input == null && !readAllInputs)
@@ -1230,11 +1234,49 @@ namespace Digi.ControlModule
             }
         }
 
+        void SetCustomDataParseFailReason(string reason)
+        {
+            if(CustomDataFailReason != reason)
+            {
+                //if(reason != null)
+                //    Log.Info($"'{block.CustomName}' WARNING: CustomData parse fail: {reason}");
+                //else
+                //    Log.Info($"'{block.CustomName}' CustomData no longer fail state");
+
+                // only force refresh terminal if we're looking at this block's controls
+                if(ControlModuleMod.IsAnyViewedInTerminal)
+                {
+                    block.ShowInInventory = !block.ShowInInventory;
+                    block.ShowInInventory = !block.ShowInInventory;
+                }
+            }
+
+            CustomDataFailReason = reason;
+
+            //RefreshUI();
+        }
+
         void LoadSettings()
         {
+            SetCustomDataParseFailReason(null);
+
             ResetSettings(); // first reset fields
 
-            ReadLegacySettings(); // check and load block name for old setting format.
+            // check and load block name for old setting format.
+            string oldName;
+            if(ReadLegacySettings(out oldName))
+            {
+                if(!SaveSettings())
+                {
+                    if(MyAPIGateway.Session.IsServer)
+                    {
+                        Log.Error($"Failed to save new setting format for '{block.CustomName}' while it had old in-name settings... reverted name.\nError: {CustomDataFailReason}");
+                        block.CustomName = oldName;
+                    }
+                }
+
+                return;
+            }
 
             string customData = block.CustomData;
             PreviousCustomDataParse = customData;
@@ -1246,7 +1288,7 @@ namespace Digi.ControlModule
             MyIniParseResult result;
             if(!IniParser.TryParse(customData, out result))
             {
-                Log.Error($"Failed to read CustomData on '{block.CustomName}': Line #{result.LineNo.ToString()}: {result.Error}");
+                SetCustomDataParseFailReason($"CustomData syntax error! line #{result.LineNo.ToString()}: {result.Error}");
                 return;
             }
 
@@ -1276,14 +1318,14 @@ namespace Digi.ControlModule
                 runOnInput = true;
         }
 
-        void SaveSettings()
+        bool SaveSettings()
         {
             string reason = ParseCustomData(block.CustomData, IniParser);
+
+            SetCustomDataParseFailReason(reason);
+
             if(reason != null)
-            {
-                Log.Error($"Failed to save settings on '{block.CustomName}': {reason}");
-                return;
-            }
+                return false;
 
             if(!readAllInputs && input == null)
             {
@@ -1312,6 +1354,8 @@ namespace Digi.ControlModule
             string ini = IniParser.ToString();
             block.CustomData = ini;
             PreviousCustomDataParse = ini;
+
+            return true;
         }
 
         /// <summary>
@@ -1352,7 +1396,7 @@ namespace Digi.ControlModule
             {
                 if(hasDivider)
                 {
-                    return $"failed to parse CustomData (before {IniDivider} divider)";
+                    return $"Can't parse existing CustomData (divider {IniDivider} already present)";
                 }
                 else
                 {
@@ -1360,7 +1404,7 @@ namespace Digi.ControlModule
                     customData = IniDivider + "\n" + customData;
                     if(!iniParser.TryParse(customData, out result))
                     {
-                        return $"failed to parse CustomData even with adding {IniDivider} before existing text!";
+                        return $"Can't parse existing CustomData even with adding {IniDivider} before existing text... which is odd, please report to mod author.";
                     }
                 }
             }
@@ -1385,13 +1429,15 @@ namespace Digi.ControlModule
                 return (nameNoData + name.Substring(endIndex + 1)).Trim();
         }
 
-        bool ReadLegacySettings()
+        bool ReadLegacySettings(out string oldName)
         {
+            string name = block?.CustomName?.ToLower();
+            oldName = name;
+
             try
             {
                 //ResetSettings(); // first reset fields
 
-                string name = block.CustomName.ToLower();
                 int startIndex = name.IndexOf(DATA_TAG_START, StringComparison.OrdinalIgnoreCase);
 
                 if(startIndex == -1)
