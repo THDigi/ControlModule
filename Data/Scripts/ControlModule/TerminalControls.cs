@@ -305,7 +305,7 @@ namespace Digi.ControlModule
                                                     "Text is case insensitive.");
                 c.Enabled = (b) => b?.GameLogic?.GetAs<ControlModule>()?.HasValidInput ?? false;
                 c.SupportsMultipleBlocks = true;
-                c.Getter = (b) => b?.GameLogic?.GetAs<ControlModule>()?.FilterSB;
+                c.Getter = (b) => b?.GameLogic?.GetAs<ControlModule>()?.FilterSB ?? new StringBuilder(0); // don't ever give it null
                 c.Setter = (b, v) =>
                 {
                     ControlModule l = b?.GameLogic?.GetAs<ControlModule>();
