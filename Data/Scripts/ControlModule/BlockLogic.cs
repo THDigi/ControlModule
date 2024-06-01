@@ -88,16 +88,15 @@ namespace Digi.ControlModule
         {
             block = (IMyTerminalBlock)Entity;
             NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
-        }
 
-        public void FirstUpdate()
-        {
-            // adding UI controls after the block has at least one update to ensure clients don't get half of the vanilla UI
             if(block is IMyTimerBlock)
                 TerminalControls.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
             else
                 TerminalControls.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
+        }
 
+        public void FirstUpdate()
+        {
             if(block.CubeGrid?.Physics == null)
             {
                 NeedsUpdate = MyEntityUpdateEnum.NONE;
