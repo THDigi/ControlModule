@@ -34,7 +34,7 @@ namespace Digi.ControlModule
 
             // the hidden inputs list property, accessible by PBs
             {
-                IMyTerminalControlProperty<Dictionary<string, object>> p = tc.CreateProperty<Dictionary<string, object>, TBlock>(ApiPropIdPrefix + "Inputs");
+                IMyTerminalControlProperty<IReadOnlyDictionary<string, object>> p = tc.CreateProperty<IReadOnlyDictionary<string, object>, TBlock>(ApiPropIdPrefix + "Inputs");
                 p.Getter = (b) => b?.GameLogic?.GetAs<ControlModule>()?.pressedList;
                 p.Setter = (b, v) => { };
                 tc.AddControl<TBlock>(p);
