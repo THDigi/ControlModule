@@ -953,14 +953,37 @@ namespace Digi
             return new Vector3(rotation.Y, rotation.X, MyAPIGateway.Input.GetRoll());
         }
 
-        public static bool IsGameControlPressed(MyStringId control, bool newPress)
+        /// <summary>
+        /// Replacement for <see cref="VRage.ModAPI.IMyInput.IsGameControlPressed(MyStringId)"/> and <see cref="VRage.ModAPI.IMyInput.IsNewGameControlPressed(MyStringId)"/>
+        /// But also includes gamepad binds...
+        /// TODO: update gamepad binds???
+        /// </summary>
+        public static bool IsGameControlPressed(MyStringId controlId, bool newPress)
         {
-            if(newPress ? MyAPIGateway.Input.IsNewGameControlPressed(control) : MyAPIGateway.Input.IsGameControlPressed(control))
-                return true;
+            var control = MyAPIGateway.Input.GetGameControl(controlId);
+            if(control == null)
+                return false;
 
-            if(gamepadBindings.ContainsKey(control))
+#if VERSION_200 || VERSION_201 || VERSION_202 || VERSION_203 || VERSION_204 || VERSION_205 // some backwards compatibility
+            if(newPress ? control.IsNewPressed() : control.IsPressed())
+                return true;
+#else
+            bool origEnabled = control.IsEnabled;
+            try
             {
-                object obj = gamepadBindings[control];
+                control.IsEnabled = true;
+                if(newPress ? control.IsNewPressed() : control.IsPressed())
+                    return true;
+            }
+            finally
+            {
+                control.IsEnabled = origEnabled;
+            }
+#endif
+
+            if(gamepadBindings.ContainsKey(controlId))
+            {
+                object obj = gamepadBindings[controlId];
 
                 if(obj is MyJoystickButtonsEnum)
                 {
