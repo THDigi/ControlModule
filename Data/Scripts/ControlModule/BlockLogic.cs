@@ -479,7 +479,7 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(ControlModuleMod.IsAnyViewedInTerminal)
+                if(!ControlModuleMod.IsAnyViewedInTerminal)
                     return; // only refresh if we're looking at the controls
 
                 List<IMyTerminalControl> controls;
