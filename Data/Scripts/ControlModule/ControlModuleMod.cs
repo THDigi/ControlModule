@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.Utils;
@@ -48,6 +51,8 @@ namespace Digi.ControlModule
             Instance = this;
             Log.ModName = "Control Module";
             Log.AutoClose = false;
+
+            MyEntities.OnEntityCreate += EntityCreated;
         }
 
         public override void BeforeStart()
@@ -77,6 +82,8 @@ namespace Digi.ControlModule
                     if(MyAPIGateway.Multiplayer.IsServer)
                         MyAPIGateway.Multiplayer.UnregisterMessageHandler(MSG_INPUTS, ReceivedInputsPacket);
                 }
+
+                MyEntities.OnEntityCreate -= EntityCreated;
             }
             catch(Exception e)
             {
@@ -85,6 +92,27 @@ namespace Digi.ControlModule
 
             Instance = null;
             Log.Close();
+        }
+
+        void EntityCreated(MyEntity ent)
+        {
+            try
+            {
+                // adding controls here as an attempt to fix them breaking vanilla ones and being early enough to be usable by PB's constructor.
+
+                if(RedrawControlsTimer.Count == 0 && ent is IMyTimerBlock)
+                    TerminalControls.CreateUIControls<IMyTimerBlock>(RedrawControlsTimer);
+
+                if(RedrawControlsPB.Count == 0 && ent is IMyProgrammableBlock)
+                    TerminalControls.CreateUIControls<IMyProgrammableBlock>(RedrawControlsPB);
+
+                if(RedrawControlsPB.Count > 0 && RedrawControlsTimer.Count > 0)
+                    MyEntities.OnEntityCreate -= EntityCreated;
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
         }
 
         public void ReceivedInputsPacket(byte[] bytes)

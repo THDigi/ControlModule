@@ -48,7 +48,6 @@ namespace Digi.ControlModule
         public bool monitorInMenus = false;
         public bool runOnInput = true;
 
-        private bool first = true;
         private long lastTrigger = 0;
         private bool lastPressed = false;
         private long lastPressedTime = 0;
@@ -87,21 +86,14 @@ namespace Digi.ControlModule
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             block = (IMyTerminalBlock)Entity;
-            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
 
-            if(block is IMyTimerBlock)
-                TerminalControls.CreateUIControls<IMyTimerBlock>(ControlModuleMod.Instance.RedrawControlsTimer);
-            else
-                TerminalControls.CreateUIControls<IMyProgrammableBlock>(ControlModuleMod.Instance.RedrawControlsPB);
+            NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
         }
 
-        public void FirstUpdate()
+        public override void UpdateOnceBeforeFrame()
         {
             if(block.CubeGrid?.Physics == null)
-            {
-                NeedsUpdate = MyEntityUpdateEnum.NONE;
                 return;
-            }
 
             LoadSettings();
             //SaveSettings();
@@ -109,17 +101,8 @@ namespace Digi.ControlModule
             // if it has inputs and is PB, fill in the pressedList dictionary ASAP, fixes PB getting dictionary exceptions on load
             if(MyAPIGateway.Multiplayer.IsServer && block is IMyProgrammableBlock && (readAllInputs || input != null))
                 UpdatePressed(true);
-        }
 
-        public override void Close()
-        {
-            try
-            {
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
+            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
         }
 
         public bool HasValidInput
@@ -748,12 +731,6 @@ namespace Digi.ControlModule
         {
             try
             {
-                if(first)
-                {
-                    first = false;
-                    FirstUpdate();
-                }
-
                 if(propertiesChanged > 0 && --propertiesChanged <= 0)
                 {
                     if(!SaveSettings())
